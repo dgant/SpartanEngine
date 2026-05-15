@@ -151,7 +151,8 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
         {
             float depth_dst_lin = linearize_depth(surface.depth);
             light_gi = sample_gi_bilateral(surface.uv, depth_dst_lin, surface.normal);
-            light_gi *= surface.occlusion;
+            float gi_intensity = max(pass_get_f4_value().z, 0.0f);
+            light_gi *= surface.occlusion * gi_intensity;
         }
     }
     

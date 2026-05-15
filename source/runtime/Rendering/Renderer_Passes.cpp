@@ -1215,9 +1215,21 @@ namespace spartan
                 cmd_list->ClearTexture(tex_gi, Color::standard_black);
                 m_pass_state.cleared_restir = true;
             }
+            m_pass_state.restir_history_valid = false;
+            m_pass_state.restir_denoise_history_valid = false;
             return;
         }
         m_pass_state.cleared_restir = false;
+
+        uint32_t restir_stage = static_cast<uint32_t>(clamp(cvar_restir_pt_stage.GetValue(), 0.0f, 4.0f));
+        if (restir_stage == 0)
+        {
+            cmd_list->ClearTexture(tex_gi, Color::standard_black);
+            cmd_list->InsertBarrier(tex_gi, RHI_BarrierType::EnsureWriteThenRead);
+            m_pass_state.restir_history_valid = false;
+            m_pass_state.restir_denoise_history_valid = false;
+            return;
+        }
             
         RHI_AccelerationStructure* tlas = GetTopLevelAccelerationStructure();
         if (!tlas)
@@ -1234,6 +1246,17 @@ namespace spartan
 
         uint32_t width  = tex_gi->GetWidth();
         uint32_t height = tex_gi->GetHeight();
+
+        auto swap_restir_history = []()
+        {
+            auto& render_targets = GetRenderTargets();
+            for (uint32_t i = 0; i < 5; i++)
+            {
+                uint32_t idx_cur  = static_cast<uint32_t>(Renderer_RenderTarget::restir_reservoir0) + i;
+                uint32_t idx_prev = static_cast<uint32_t>(Renderer_RenderTarget::restir_reservoir_prev0) + i;
+                swap(render_targets[idx_cur], render_targets[idx_prev]);
+            }
+        };
 
         // initial sampling
         cmd_list->BeginTimeblock("restir_pt_initial");
@@ -1279,6 +1302,20 @@ namespace spartan
         }
         cmd_list->EndTimeblock();
 
+        if (restir_stage < 2)
+        {
+            cmd_list->InsertBarrier(tex_gi, RHI_BarrierType::EnsureWriteThenRead);
+            return;
+        }
+
+        if (!m_pass_state.restir_history_valid)
+        {
+            cmd_list->InsertBarrier(tex_gi, RHI_BarrierType::EnsureWriteThenRead);
+            swap_restir_history();
+            m_pass_state.restir_history_valid = true;
+            return;
+        }
+
         const uint32_t thread_group_count_x = 8;
         const uint32_t thread_group_count_y = 8;
         uint32_t dispatch_x = (width + thread_group_count_x - 1) / thread_group_count_x;
@@ -1318,69 +1355,72 @@ namespace spartan
         for (uint32_t i = 0; i < 5; i++)
             reservoirs_spatial[i] = GetRenderTarget(static_cast<Renderer_RenderTarget>(static_cast<uint32_t>(Renderer_RenderTarget::restir_reservoir_spatial0) + i));
 
-        if (RHI_Shader* shader_spatial = GetShader(Renderer_Shader::restir_pt_spatial_c); shader_spatial && shader_spatial->IsCompiled())
+        if (restir_stage >= 3)
         {
-            // pass 1: reservoirs -> reservoirs_spatial
-            cmd_list->BeginTimeblock("restir_pt_spatial");
+            if (RHI_Shader* shader_spatial = GetShader(Renderer_Shader::restir_pt_spatial_c); shader_spatial && shader_spatial->IsCompiled())
             {
-                RHI_PipelineState pso;
-                pso.name             = "restir_pt_spatial";
-                pso.shaders[Compute] = shader_spatial;
-                cmd_list->SetPipelineState(pso);
-
-                m_pcb_pass_cpu.set_f3_value(0.0f);
-                cmd_list->PushConstants(m_pcb_pass_cpu);
-
-                SetCommonTextures(cmd_list);
-
-                cmd_list->SetAccelerationStructure(Renderer_BindingsSrv::tlas, tlas);
-
-                for (uint32_t i = 0; i < 5; i++)
+                // pass 1: reservoirs -> reservoirs_spatial
+                cmd_list->BeginTimeblock("restir_pt_spatial");
                 {
-                    cmd_list->SetTexture(static_cast<uint32_t>(Renderer_BindingsSrv::reservoir_prev0) + i, reservoirs[i]);
-                    cmd_list->SetTexture(static_cast<uint32_t>(Renderer_BindingsUav::reservoir0) + i,      reservoirs_spatial[i], rhi_all_mips, 0, true);
+                    RHI_PipelineState pso;
+                    pso.name             = "restir_pt_spatial";
+                    pso.shaders[Compute] = shader_spatial;
+                    cmd_list->SetPipelineState(pso);
+
+                    m_pcb_pass_cpu.set_f3_value(0.0f);
+                    cmd_list->PushConstants(m_pcb_pass_cpu);
+
+                    SetCommonTextures(cmd_list);
+
+                    cmd_list->SetAccelerationStructure(Renderer_BindingsSrv::tlas, tlas);
+
+                    for (uint32_t i = 0; i < 5; i++)
+                    {
+                        cmd_list->SetTexture(static_cast<uint32_t>(Renderer_BindingsSrv::reservoir_prev0) + i, reservoirs[i]);
+                        cmd_list->SetTexture(static_cast<uint32_t>(Renderer_BindingsUav::reservoir0) + i,      reservoirs_spatial[i], rhi_all_mips, 0, true);
+                    }
+
+                    cmd_list->SetTexture(static_cast<uint32_t>(Renderer_BindingsUav::tex), tex_gi, rhi_all_mips, 0, true);
+                    cmd_list->Dispatch(dispatch_x, dispatch_y, 1);
+
+                    for (uint32_t i = 0; i < 5; i++)
+                        cmd_list->InsertBarrier(reservoirs_spatial[i], RHI_BarrierType::EnsureWriteThenRead);
+                    cmd_list->InsertBarrier(tex_gi, RHI_BarrierType::EnsureWriteThenRead);
                 }
+                cmd_list->EndTimeblock();
 
-                cmd_list->SetTexture(static_cast<uint32_t>(Renderer_BindingsUav::tex), tex_gi, rhi_all_mips, 0, true);
-                cmd_list->Dispatch(dispatch_x, dispatch_y, 1);
-
-                for (uint32_t i = 0; i < 5; i++)
-                    cmd_list->InsertBarrier(reservoirs_spatial[i], RHI_BarrierType::EnsureWriteThenRead);
-                cmd_list->InsertBarrier(tex_gi, RHI_BarrierType::EnsureWriteThenRead);
-            }
-            cmd_list->EndTimeblock();
-
-            // pass 2: reservoirs_spatial -> reservoirs (ping-pong back)
-            cmd_list->BeginTimeblock("restir_pt_spatial_2");
-            {
-                RHI_PipelineState pso;
-                pso.name             = "restir_pt_spatial_2";
-                pso.shaders[Compute] = shader_spatial;
-                cmd_list->SetPipelineState(pso);
-
-                m_pcb_pass_cpu.set_f3_value(1.0f);
-                cmd_list->PushConstants(m_pcb_pass_cpu);
-
-                SetCommonTextures(cmd_list);
-
-                cmd_list->SetAccelerationStructure(Renderer_BindingsSrv::tlas, tlas);
-
-                for (uint32_t i = 0; i < 5; i++)
+                // pass 2: reservoirs_spatial -> reservoirs (ping-pong back)
+                cmd_list->BeginTimeblock("restir_pt_spatial_2");
                 {
-                    cmd_list->SetTexture(static_cast<uint32_t>(Renderer_BindingsSrv::reservoir_prev0) + i, reservoirs_spatial[i]);
-                    cmd_list->SetTexture(static_cast<uint32_t>(Renderer_BindingsUav::reservoir0) + i,      reservoirs[i], rhi_all_mips, 0, true);
+                    RHI_PipelineState pso;
+                    pso.name             = "restir_pt_spatial_2";
+                    pso.shaders[Compute] = shader_spatial;
+                    cmd_list->SetPipelineState(pso);
+
+                    m_pcb_pass_cpu.set_f3_value(1.0f);
+                    cmd_list->PushConstants(m_pcb_pass_cpu);
+
+                    SetCommonTextures(cmd_list);
+
+                    cmd_list->SetAccelerationStructure(Renderer_BindingsSrv::tlas, tlas);
+
+                    for (uint32_t i = 0; i < 5; i++)
+                    {
+                        cmd_list->SetTexture(static_cast<uint32_t>(Renderer_BindingsSrv::reservoir_prev0) + i, reservoirs_spatial[i]);
+                        cmd_list->SetTexture(static_cast<uint32_t>(Renderer_BindingsUav::reservoir0) + i,      reservoirs[i], rhi_all_mips, 0, true);
+                    }
+
+                    cmd_list->SetTexture(static_cast<uint32_t>(Renderer_BindingsUav::tex), tex_gi, rhi_all_mips, 0, true);
+                    cmd_list->Dispatch(dispatch_x, dispatch_y, 1);
+
+                    for (uint32_t i = 0; i < 5; i++)
+                        cmd_list->InsertBarrier(reservoirs[i], RHI_BarrierType::EnsureWriteThenRead);
+                    cmd_list->InsertBarrier(tex_gi, RHI_BarrierType::EnsureWriteThenRead);
                 }
+                cmd_list->EndTimeblock();
 
-                cmd_list->SetTexture(static_cast<uint32_t>(Renderer_BindingsUav::tex), tex_gi, rhi_all_mips, 0, true);
-                cmd_list->Dispatch(dispatch_x, dispatch_y, 1);
-
-                for (uint32_t i = 0; i < 5; i++)
-                    cmd_list->InsertBarrier(reservoirs[i], RHI_BarrierType::EnsureWriteThenRead);
-                cmd_list->InsertBarrier(tex_gi, RHI_BarrierType::EnsureWriteThenRead);
+                ran_spatial = true;
             }
-            cmd_list->EndTimeblock();
-
-            ran_spatial = true;
         }
 
         if (!ran_spatial)
@@ -1388,13 +1428,8 @@ namespace spartan
 
         // swap for next frame's temporal pass
         {
-            auto& render_targets = GetRenderTargets();
-            for (uint32_t i = 0; i < 5; i++)
-            {
-                uint32_t idx_cur  = static_cast<uint32_t>(Renderer_RenderTarget::restir_reservoir0) + i;
-                uint32_t idx_prev = static_cast<uint32_t>(Renderer_RenderTarget::restir_reservoir_prev0) + i;
-                swap(render_targets[idx_cur], render_targets[idx_prev]);
-            }
+            swap_restir_history();
+            m_pass_state.restir_history_valid = true;
         }
     }
 
@@ -1420,10 +1455,12 @@ namespace spartan
             cmd_list->InsertBarrier(tex_gi_denoised, RHI_BarrierType::EnsureReadThenWrite);
             Pass_Blit(cmd_list, tex_gi_raw, tex_gi_denoised);
             cmd_list->InsertBarrier(tex_gi_denoised, RHI_BarrierType::EnsureWriteThenRead);
+            m_pass_state.restir_denoise_history_valid = false;
             return;
         }
 
-        if (cvar_restir_pt_debug_mode.GetValue() > 0.0f)
+        uint32_t restir_stage = static_cast<uint32_t>(clamp(cvar_restir_pt_stage.GetValue(), 0.0f, 4.0f));
+        if (restir_stage < 4 || !m_pass_state.restir_denoise_history_valid || cvar_restir_pt_debug_mode.GetValue() > 0.0f)
         {
             cmd_list->InsertBarrier(tex_gi_denoised, RHI_BarrierType::EnsureReadThenWrite);
             cmd_list->InsertBarrier(tex_gi_history,  RHI_BarrierType::EnsureReadThenWrite);
@@ -1431,6 +1468,7 @@ namespace spartan
             Pass_Blit(cmd_list, tex_gi_raw, tex_gi_history);
             cmd_list->InsertBarrier(tex_gi_denoised, RHI_BarrierType::EnsureWriteThenRead);
             cmd_list->InsertBarrier(tex_gi_history,  RHI_BarrierType::EnsureWriteThenRead);
+            m_pass_state.restir_denoise_history_valid = restir_stage >= 4;
             return;
         }
 
@@ -1556,6 +1594,7 @@ namespace spartan
         Pass_Blit(cmd_list, tex_gi_ping, tex_gi_history);
         cmd_list->InsertBarrier(tex_gi_history,  RHI_BarrierType::EnsureWriteThenRead);
         cmd_list->InsertBarrier(tex_gi_denoised, RHI_BarrierType::EnsureWriteThenRead);
+        m_pass_state.restir_denoise_history_valid = true;
     }
 
     void Renderer::Pass_ScreenSpaceShadows(RHI_CommandList* cmd_list)
@@ -1776,7 +1815,7 @@ namespace spartan
             m_pcb_pass_cpu.is_transparent = is_transparent_pass ? 1 : 0;
             m_pcb_pass_cpu.set_f3_value(0.0f, cvar_fog.GetValue(), cvar_fog_height_scale.GetValue());
             m_pcb_pass_cpu.set_f3_value2(cvar_fog_falloff_power.GetValue(), cvar_fog_volumetric_density.GetValue(), cvar_fog_volumetric_horizon.GetValue());
-            m_pcb_pass_cpu.set_f4_value(cvar_fog_phase.GetValue(), cvar_fog_min_transmittance.GetValue(), 0.0f, 0.0f);
+            m_pcb_pass_cpu.set_f4_value(cvar_fog_phase.GetValue(), cvar_fog_min_transmittance.GetValue(), cvar_restir_pt_intensity.GetValue(), 0.0f);
             cmd_list->PushConstants(m_pcb_pass_cpu);
 
             SetCommonTextures(cmd_list, eye_layer);

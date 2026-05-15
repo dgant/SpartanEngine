@@ -304,7 +304,9 @@ void RenderOptions::OnTickVisible()
                     option_check_box("Shadows", "r.ray_traced_shadows");
                     option_check_box("ReSTIR Path Tracing (WIP)", "r.restir_pt");
                     ImGui::BeginDisabled(!cvar_restir_pt.GetValueAs<bool>());
+                    option_value("ReSTIR execution stage", "r.restir_pt_stage", "0 allocates resources, 1 traces initial rays, 2 adds temporal reuse, 3 adds spatial reuse, 4 enables denoising", 1.0f, 0.0f, 4.0f, "%.0f");
                     option_value("ReSTIR resolution scale", "r.restir_pt_scale", "Fraction of render resolution used for path tracing (0.1-1.0)", 0.05f, 0.1f, 1.0f, "%.2f");
+                    option_value("ReSTIR contribution intensity", "r.restir_pt_intensity", "Scales the ReSTIR GI contribution during composition", 0.01f, 0.0f, 1.0f, "%.2f");
                     uint32_t restir_debug_mode = cvar_restir_pt_debug_mode.GetValueAs<uint32_t>();
                     if (option_combo_box("ReSTIR debug view", restir_debug_modes, restir_debug_mode, "Visualize reservoir state and temporal rejection"))
                     {

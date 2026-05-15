@@ -87,6 +87,8 @@ namespace spartan
     extern TConsoleVar<float> cvar_restir_pt;
     extern TConsoleVar<float> cvar_restir_pt_scale;
     extern TConsoleVar<float> cvar_restir_pt_debug_mode;
+    extern TConsoleVar<float> cvar_restir_pt_stage;
+    extern TConsoleVar<float> cvar_restir_pt_intensity;
     extern TConsoleVar<float> cvar_motion_blur;
     extern TConsoleVar<float> cvar_depth_of_field;
     extern TConsoleVar<float> cvar_depth_of_field_strength;
@@ -359,6 +361,8 @@ namespace spartan
             bool cleared_rt_reflections  = false;
             bool cleared_rt_shadows      = false;
             bool cleared_restir          = false;
+            bool restir_history_valid    = false;
+            bool restir_denoise_history_valid = false;
 
             // skysphere convergence tracking
             bool     sky_first_frame           = true;

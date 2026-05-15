@@ -302,6 +302,8 @@ namespace spartan
             at(render_targets, Renderer_RenderTarget::restir_denoised)         = make_shared<RHI_Texture>(RHI_Texture_Type::Type2D, restir_out_width, restir_out_height, 1, 1, RHI_Format::R16G16B16A16_Float, restir_out_flags, "restir_denoised");
             at(render_targets, Renderer_RenderTarget::restir_denoised_history) = make_shared<RHI_Texture>(RHI_Texture_Type::Type2D, restir_out_width, restir_out_height, 1, 1, RHI_Format::R16G16B16A16_Float, restir_out_flags, "restir_denoised_history");
             at(render_targets, Renderer_RenderTarget::restir_denoised_ping)    = make_shared<RHI_Texture>(RHI_Texture_Type::Type2D, restir_out_width, restir_out_height, 1, 1, RHI_Format::R16G16B16A16_Float, restir_out_flags, "restir_denoised_ping");
+            m_pass_state.restir_history_valid = false;
+            m_pass_state.restir_denoise_history_valid = false;
         }
 
         if (need_restir && !at(render_targets, Renderer_RenderTarget::restir_reservoir0))
@@ -324,6 +326,8 @@ namespace spartan
             }
 
             last_restir_scale = restir_scale;
+            m_pass_state.restir_history_valid = false;
+            m_pass_state.restir_denoise_history_valid = false;
         }
         else if (!need_restir && at(render_targets, Renderer_RenderTarget::restir_reservoir0))
         {

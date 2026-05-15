@@ -65,6 +65,18 @@ namespace spartan
             *ConsoleRegistry::Get().Find("r.restir_pt_debug_mode")->m_value_ptr = v;
         }
 
+        void on_restir_pt_stage_change(const CVarVariant& value)
+        {
+            float v = clamp(get<float>(value), 0.0f, 4.0f);
+            *ConsoleRegistry::Get().Find("r.restir_pt_stage")->m_value_ptr = v;
+        }
+
+        void on_restir_pt_intensity_change(const CVarVariant& value)
+        {
+            float v = clamp(get<float>(value), 0.0f, 1.0f);
+            *ConsoleRegistry::Get().Find("r.restir_pt_intensity")->m_value_ptr = v;
+        }
+
         void on_hdr_change(const CVarVariant& value)
         {
             if (get<float>(value) == 1.0f && !Display::GetHdr())
@@ -187,6 +199,8 @@ namespace spartan
     TConsoleVar<float> cvar_restir_pt                      ("r.restir_pt",                      0.0f,                                                    "restir path tracing global illumination");
     TConsoleVar<float> cvar_restir_pt_scale                ("r.restir_pt_scale",                0.5f,                                                    "restir resolution scale (0.1-1.0)",       on_restir_pt_scale_change);
     TConsoleVar<float> cvar_restir_pt_debug_mode           ("r.restir_pt_debug_mode",           0.0f,                                                    "restir debug mode",                    on_restir_pt_debug_mode_change);
+    TConsoleVar<float> cvar_restir_pt_stage                ("r.restir_pt_stage",                4.0f,                                                    "restir execution stage (0-4)",         on_restir_pt_stage_change);
+    TConsoleVar<float> cvar_restir_pt_intensity            ("r.restir_pt_intensity",            1.0f,                                                    "restir contribution intensity",        on_restir_pt_intensity_change);
     TConsoleVar<float> cvar_motion_blur                    ("r.motion_blur",                    1.0f,                                                    "motion blur");
     TConsoleVar<float> cvar_depth_of_field                 ("r.depth_of_field",                 1.0f,                                                    "depth of field");
     TConsoleVar<float> cvar_depth_of_field_strength        ("r.depth_of_field_strength",        1.0f,                                                    "depth of field blur strength");
