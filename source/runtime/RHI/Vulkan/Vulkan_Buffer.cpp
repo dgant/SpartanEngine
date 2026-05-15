@@ -240,22 +240,26 @@ namespace spartan
         SP_ASSERT_MSG(m_mappable,                           "Can't update unmapped buffer");
         SP_ASSERT_MSG(data_cpu != nullptr,                  "Invalid cpu data");
         SP_ASSERT_MSG(m_data_gpu != nullptr,                "Invalid gpu data");
-        SP_ASSERT_MSG(m_offset + m_stride <= m_object_size, "Out of memory");
 
-        // advance offset
-        if (first_update)
-        {
-            first_update = false;
-        }
-        else
+        const uint32_t upload_size = (size != 0) ? size : m_stride;
+        SP_ASSERT_MSG(upload_size <= m_object_size, "Upload is larger than buffer");
+
+        // Constant buffers and other persistently mapped dynamic buffers are ring allocated.
+        // Match the D3D12 backend by wrapping instead of advancing until the offset exceeds
+        // the buffer after enough frames.
+        if (!first_update)
         {
             m_offset += m_stride;
+            if (static_cast<uint64_t>(m_offset) + upload_size > m_object_size)
+            {
+                m_offset = 0;
+            }
         }
+        first_update = false;
 
         // memcpy directly to the persistent host-coherent mapping and emit a single host->device
         // barrier, this avoids vkCmdUpdateBuffer which records data inline into the command buffer
         // and bloats it for large uploads (the cull tasks buffer can be several mb per frame)
-        const uint32_t upload_size = (size != 0) ? size : m_stride;
         SP_ASSERT(static_cast<uint64_t>(m_offset) + upload_size <= m_object_size);
 
         memcpy(static_cast<uint8_t*>(m_data_gpu) + m_offset, data_cpu, upload_size);

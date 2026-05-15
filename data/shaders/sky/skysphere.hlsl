@@ -1230,7 +1230,8 @@ void main_cs(uint3 tid : SV_DispatchThreadID)
     }
     
     // intensity scaling
-    float intensity = lerp(0.5, 1.5, saturate(light.intensity / 100000.0));
+    float skybox_brightness = max(pass_get_f3_value().x, 0.0);
+    float intensity = lerp(0.5, 1.5, saturate(light.intensity / 100000.0)) * skybox_brightness;
     luminance *= day_factor;
     
     // night sky, atmosphere is sky-dome and goes through clouds, celestials are occluded by clouds

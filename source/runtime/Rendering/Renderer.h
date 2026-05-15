@@ -75,6 +75,7 @@ namespace spartan
     extern TConsoleVar<float> cvar_fog_min_transmittance;
     extern TConsoleVar<float> cvar_minotaur_sky_ibl;
     extern TConsoleVar<float> cvar_minotaur_moon_bounce;
+    extern TConsoleVar<float> cvar_minotaur_skybox_brightness;
     extern TConsoleVar<float> cvar_ssao;
     extern TConsoleVar<float> cvar_ssao_radius;
     extern TConsoleVar<float> cvar_ssao_intensity;

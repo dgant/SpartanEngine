@@ -1705,6 +1705,7 @@ namespace spartan
                     cmd_list->SetTexture(Renderer_BindingsSrv::tex3d_cloud_detail, tex_cloud_detail);
 
                 // shader reads buffer_pass via get_camera_position so push constants must be set
+                m_pcb_pass_cpu.set_f3_value(cvar_minotaur_skybox_brightness.GetValue(), 0.0f, 0.0f);
                 cmd_list->PushConstants(m_pcb_pass_cpu);
                 cmd_list->Dispatch(tex_skysphere);
             }
