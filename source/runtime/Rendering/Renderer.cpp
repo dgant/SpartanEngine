@@ -308,7 +308,8 @@ namespace spartan
         {
             static uint32_t options_hash  = 0;
             static float restir_scale_old = -1.0f;
-            uint32_t options_hash_new     = (cvar_ssao.GetValueAs<bool>() << 0) | (cvar_ray_traced_reflections.GetValueAs<bool>() << 1) | (cvar_restir_pt.GetValueAs<bool>() << 2);
+            bool restir_resources_requested = cvar_restir_pt.GetValueAs<bool>() || cvar_restir_pt_preallocate.GetValueAs<bool>();
+            uint32_t options_hash_new     = (cvar_ssao.GetValueAs<bool>() << 0) | (cvar_ray_traced_reflections.GetValueAs<bool>() << 1) | (restir_resources_requested << 2);
             float restir_scale_new        = cvar_restir_pt_scale.GetValue();
 
             if (options_hash_new != options_hash || restir_scale_new != restir_scale_old)
@@ -1628,7 +1629,7 @@ namespace spartan
 
     void Renderer::UpdateAccelerationStructures(RHI_CommandList* cmd_list)
     {
-        bool ray_tracing_enabled = cvar_ray_traced_reflections.GetValueAs<bool>() || cvar_ray_traced_shadows.GetValueAs<bool>() || cvar_restir_pt.GetValueAs<bool>();
+        bool ray_tracing_enabled = cvar_ray_traced_reflections.GetValueAs<bool>() || cvar_ray_traced_shadows.GetValueAs<bool>() || cvar_restir_pt.GetValueAs<bool>() || cvar_restir_pt_preallocate.GetValueAs<bool>();
         if (!ray_tracing_enabled)
             return;
 

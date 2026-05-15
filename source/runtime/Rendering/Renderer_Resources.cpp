@@ -277,7 +277,7 @@ namespace spartan
         }
         
         // restir reservoirs - recreate when toggled or when resolution scale changes
-        bool need_restir = cvar_restir_pt.GetValueAs<bool>() && RHI_Device::IsSupportedRayTracing();
+        bool need_restir = (cvar_restir_pt.GetValueAs<bool>() || cvar_restir_pt_preallocate.GetValueAs<bool>()) && RHI_Device::IsSupportedRayTracing();
         float restir_scale = cvar_restir_pt_scale.GetValue();
         static float last_restir_scale = -1.0f;
         static vector<shared_ptr<RHI_Texture>>* retired_restir_targets = new vector<shared_ptr<RHI_Texture>>();

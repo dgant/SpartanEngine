@@ -197,6 +197,7 @@ namespace spartan
     TConsoleVar<float> cvar_ray_traced_reflections         ("r.ray_traced_reflections",         static_cast<float>(RHI_Device::IsSupportedRayTracing()), "ray traced reflections",                  on_ray_traced_reflections_change);
     TConsoleVar<float> cvar_ray_traced_shadows             ("r.ray_traced_shadows",             static_cast<float>(RHI_Device::IsSupportedRayTracing()), "ray traced shadows for all lights",       on_ray_traced_shadows_change);
     TConsoleVar<float> cvar_restir_pt                      ("r.restir_pt",                      0.0f,                                                    "restir path tracing global illumination");
+    TConsoleVar<float> cvar_restir_pt_preallocate          ("r.restir_pt_preallocate",          0.0f,                                                    "preallocate restir resources");
     TConsoleVar<float> cvar_restir_pt_scale                ("r.restir_pt_scale",                0.5f,                                                    "restir resolution scale (0.1-1.0)",       on_restir_pt_scale_change);
     TConsoleVar<float> cvar_restir_pt_debug_mode           ("r.restir_pt_debug_mode",           0.0f,                                                    "restir debug mode",                    on_restir_pt_debug_mode_change);
     TConsoleVar<float> cvar_restir_pt_stage                ("r.restir_pt_stage",                4.0f,                                                    "restir execution stage (0-4)",         on_restir_pt_stage_change);
