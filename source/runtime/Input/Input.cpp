@@ -35,10 +35,10 @@ using namespace spartan::math;
 namespace spartan
 {
     // keys
-    array<bool, 107> Input::m_keys;
-    array<bool, 107> m_keys_previous_frame;
-    uint32_t Input::m_start_index_mouse   = 83;
-    uint32_t Input::m_start_index_gamepad = 86;
+    array<bool, 108> Input::m_keys;
+    array<bool, 108> m_keys_previous_frame;
+    uint32_t Input::m_start_index_mouse   = 84;
+    uint32_t Input::m_start_index_gamepad = 87;
 
     void Input::Initialize()
     {
@@ -83,7 +83,7 @@ namespace spartan
         return !GetKey(key) && m_keys_previous_frame[static_cast<uint32_t>(key)];
     }
 
-    array<bool, 107>& Input::GetKeys()
+    array<bool, 108>& Input::GetKeys()
     {
         return m_keys;
     }

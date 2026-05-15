@@ -42,11 +42,13 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
     float4 color    = tex[thread_id.xy];
 
     // film grain
-    float t          = buffer_frame.frame * float(g_film_grain_speed);
+    float intensity  = max(pass_get_f3_value().y, 0.0f);
+    float speed      = pass_get_f3_value().z > 0.0f ? pass_get_f3_value().z : float(g_film_grain_speed);
+    float t          = buffer_frame.frame * speed;
     float seed       = dot(uv, float2(12.9898, 78.233));
     float noise      = frac(sin(seed) * 43758.5453 + t);
     noise            = gaussian(noise, float(g_film_grain_mean), float(g_film_grain_variance) * float(g_film_grain_variance));
-    float film_grain =  noise * g_film_grain_intensity;
+    float film_grain =  noise * g_film_grain_intensity * intensity;
 
     // iso noise
     float camera_iso = pass_get_f3_value().x;

@@ -217,6 +217,13 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
         }
     }
 
+    if (pass_is_transparent() && ((surface.flags & uint(1U << 15)) != 0))
+    {
+        float4 existing = tex_uav[thread_id.xy];
+        tex_uav[thread_id.xy] = validate_output(float4(existing.rgb + (light_emissive * surface.alpha), existing.a));
+        return;
+    }
+
     // transparent surfaces sample the background via the refraction pass, no need to
     // blend with the existing opaque content here, opaque pixels in this pass were
     // already short circuited at the top, so each pixel reaches this point exactly

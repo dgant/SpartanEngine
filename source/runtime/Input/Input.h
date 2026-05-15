@@ -53,6 +53,7 @@ namespace spartan
         Home,
         End,
         Insert,
+        Backquote,
 
         // mouse
         Click_Left,
@@ -158,13 +159,13 @@ namespace spartan
         static bool GamepadVibrate(const float left_motor_speed, const float right_motor_speed);
 
     private:
-        static std::array<bool, 107>& GetKeys();
+        static std::array<bool, 108>& GetKeys();
         static uint32_t GetKeyIndexMouse();
         static uint32_t GetKeyIndexGamepad();
         static void CheckDeviceState(void* event, Controller* controller);
 
         // keys
-        static std::array<bool, 107> m_keys;
+        static std::array<bool, 108> m_keys;
         static uint32_t m_start_index_mouse;
         static uint32_t m_start_index_gamepad;
     };

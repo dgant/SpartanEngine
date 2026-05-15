@@ -80,8 +80,8 @@ float3 downsample_stable(Texture2D<float4> src, float2 uv, float2 texel_size)
 float3 threshold(float3 color)
 {
     // config: threshold in watts
-    const float THRESHOLD = 0.366f; 
-    const float KNEE      = THRESHOLD * 0.5f;
+    const float THRESHOLD = max(pass_get_f3_value().x, 0.0001f);
+    const float KNEE      = THRESHOLD * max(pass_get_f3_value().z, 0.0f);
 
     float brightness = get_luminance(color);
 
@@ -100,7 +100,7 @@ float3 upsample_filter(Texture2D<float4> src, float2 uv, float2 texel_size)
 {
     // config: radius
     // 3.0 creates a smooth cinematic blur
-    const float RADIUS = 3.0f;
+    const float RADIUS = max(pass_get_f3_value().y, 0.0f);
     float4 d = texel_size.xyxy * float4(-1.0f, -1.0f, 1.0f, 1.0f) * RADIUS;
 
     // 9-tap tent filter
@@ -185,7 +185,7 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
     float3 high_mip = tex_uav[thread_id.xy].rgb;
     
     // 3. blend with spread factor
-    const float SPREAD_FACTOR = 1.0f;
+    const float SPREAD_FACTOR = max(pass_get_f3_value2().x, 0.0f);
     float3 result = high_mip * SPREAD_FACTOR + low_mip;
     
     tex_uav[thread_id.xy] = float4(result, 1.0f);
@@ -203,7 +203,7 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
     
     float4 color_frame               = tex[thread_id.xy];
     float4 color_bloom               = tex2[thread_id.xy];
-    const float INTENSITY_CORRECTION = 0.0025f;
+    const float INTENSITY_CORRECTION = max(pass_get_f3_value2().y, 0.0f);
     float bloom_intensity            = pass_get_f3_value().x;
     float3 result                    = color_frame.rgb + (color_bloom.rgb * INTENSITY_CORRECTION * bloom_intensity);
     

@@ -309,6 +309,8 @@ gbuffer main_ps(gbuffer_vertex vertex, bool is_front_face : SV_IsFrontFace)
 
     // alpha: opaque pass forces alpha to 1 for non-transparent pixels
     albedo.a = lerp(albedo.a, 1.0f, step(albedo_sample.a, 1.0f) * pass_is_opaque());
+    if (pass_is_transparent() && material.emissive_from_albedo() && albedo.a <= 0.01f)
+        discard;
 
     // emission
     if (surface.has_texture_emissive())

@@ -129,5 +129,6 @@ namespace spartan
         GetKeys()[80] = key_states[SDL_SCANCODE_HOME];
         GetKeys()[81] = key_states[SDL_SCANCODE_END];
         GetKeys()[82] = key_states[SDL_SCANCODE_INSERT];
+        GetKeys()[83] = key_states[SDL_SCANCODE_GRAVE];
     }
 }

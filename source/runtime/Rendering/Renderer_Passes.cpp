@@ -951,6 +951,9 @@ namespace spartan
             SetCommonTextures(cmd_list);
             cmd_list->SetTexture(Renderer_BindingsUav::tex, tex_ssao);
             // shader statically references buffer_pass via common accessors so push constants must be set
+            m_pcb_pass_cpu.set_f3_value(cvar_ssao_radius.GetValue(), cvar_ssao_intensity.GetValue(), 0.0f);
+            m_pcb_pass_cpu.set_f3_value2(cvar_ssao_directions.GetValue(), cvar_ssao_steps.GetValue(), cvar_ssao_thickness.GetValue());
+            m_pcb_pass_cpu.set_f4_value(cvar_ssao_falloff.GetValue(), 0.0f, 0.0f, 0.0f);
             cmd_list->PushConstants(m_pcb_pass_cpu);
             cmd_list->Dispatch(tex_ssao, Renderer::GetResolutionScale());
         }
@@ -1738,7 +1741,9 @@ namespace spartan
             }
     
             m_pcb_pass_cpu.is_transparent = is_transparent_pass ? 1 : 0;
-            m_pcb_pass_cpu.set_f3_value(static_cast<float>(m_count_active_lights), cvar_fog.GetValue());
+            m_pcb_pass_cpu.set_f3_value(static_cast<float>(m_count_active_lights), cvar_fog.GetValue(), cvar_fog_height_scale.GetValue());
+            m_pcb_pass_cpu.set_f3_value2(cvar_fog_falloff_power.GetValue(), cvar_fog_volumetric_density.GetValue(), cvar_fog_volumetric_horizon.GetValue());
+            m_pcb_pass_cpu.set_f4_value(cvar_fog_phase.GetValue(), cvar_fog_min_transmittance.GetValue(), 0.0f, 0.0f);
             cmd_list->PushConstants(m_pcb_pass_cpu);
 
             cmd_list->Dispatch(light_diffuse, Renderer::GetResolutionScale());
@@ -1769,7 +1774,9 @@ namespace spartan
             cmd_list->SetPipelineState(pso);
 
             m_pcb_pass_cpu.is_transparent = is_transparent_pass ? 1 : 0;
-            m_pcb_pass_cpu.set_f3_value(0.0f, cvar_fog.GetValue(), 0.0f);
+            m_pcb_pass_cpu.set_f3_value(0.0f, cvar_fog.GetValue(), cvar_fog_height_scale.GetValue());
+            m_pcb_pass_cpu.set_f3_value2(cvar_fog_falloff_power.GetValue(), cvar_fog_volumetric_density.GetValue(), cvar_fog_volumetric_horizon.GetValue());
+            m_pcb_pass_cpu.set_f4_value(cvar_fog_phase.GetValue(), cvar_fog_min_transmittance.GetValue(), 0.0f, 0.0f);
             cmd_list->PushConstants(m_pcb_pass_cpu);
 
             SetCommonTextures(cmd_list, eye_layer);
@@ -1802,7 +1809,7 @@ namespace spartan
             cmd_list->SetTexture(Renderer_BindingsSrv::tex2,    GetRenderTarget(Renderer_RenderTarget::lut_brdf_specular));
             cmd_list->SetTexture(Renderer_BindingsSrv::tex3,    GetRenderTarget(Renderer_RenderTarget::skysphere));
 
-            m_pcb_pass_cpu.set_f3_value(static_cast<float>(GetRenderTarget(Renderer_RenderTarget::skysphere)->GetMipCount()));
+            m_pcb_pass_cpu.set_f3_value(static_cast<float>(GetRenderTarget(Renderer_RenderTarget::skysphere)->GetMipCount()), cvar_minotaur_sky_ibl.GetValue(), cvar_minotaur_moon_bounce.GetValue());
             cmd_list->PushConstants(m_pcb_pass_cpu);
             cmd_list->Dispatch(tex_out, Renderer::GetResolutionScale());
         }
@@ -2012,7 +2019,9 @@ namespace spartan
             run_effect("depth_of_field", Renderer_Shader::depth_of_field_c, [&]()
             {
                 SetCommonTextures(cmd_list, eye_layer);
-                m_pcb_pass_cpu.set_f3_value(World::GetCamera()->GetAperture(), 0.0f, 0.0f);
+                m_pcb_pass_cpu.set_f3_value(World::GetCamera()->GetAperture(), cvar_depth_of_field_strength.GetValue(), cvar_depth_of_field_focus_distance.GetValue());
+                m_pcb_pass_cpu.set_f3_value2(cvar_depth_of_field_max_coc.GetValue(), cvar_depth_of_field_near_scale.GetValue(), cvar_depth_of_field_far_scale.GetValue());
+                m_pcb_pass_cpu.set_f4_value(cvar_depth_of_field_focus_region.GetValue(), cvar_depth_of_field_center_bias.GetValue(), cvar_depth_of_field_outlier_threshold.GetValue(), cvar_depth_of_field_leak_prevention.GetValue());
                 cmd_list->PushConstants(m_pcb_pass_cpu);
             });
         }
@@ -2091,7 +2100,7 @@ namespace spartan
         {
             run_effect("film_grain", Renderer_Shader::film_grain_c, [&]()
             {
-                m_pcb_pass_cpu.set_f3_value(World::GetCamera()->GetIso(), 0.0f, 0.0f);
+                m_pcb_pass_cpu.set_f3_value(World::GetCamera()->GetIso(), cvar_film_grain_intensity.GetValue(), cvar_film_grain_speed.GetValue());
                 cmd_list->PushConstants(m_pcb_pass_cpu);
             });
         }
@@ -2100,7 +2109,7 @@ namespace spartan
         {
             run_effect("chromatic_aberration", Renderer_Shader::chromatic_aberration_c, [&]()
             {
-                m_pcb_pass_cpu.set_f3_value(World::GetCamera()->GetAperture(), 0.0f, 0.0f);
+                m_pcb_pass_cpu.set_f3_value(cvar_chromatic_aberration_intensity.GetValue(), cvar_chromatic_aberration_distortion.GetValue(), 0.0f);
                 cmd_list->PushConstants(m_pcb_pass_cpu);
             });
         }
@@ -2155,6 +2164,9 @@ namespace spartan
             pso.name             = "bloom_luminance";
             pso.shaders[Compute] = shader_luminance;
             cmd_list->SetPipelineState(pso);
+            m_pcb_pass_cpu.set_f3_value(cvar_bloom_threshold.GetValue(), cvar_bloom_radius.GetValue(), cvar_bloom_knee.GetValue());
+            m_pcb_pass_cpu.set_f3_value2(cvar_bloom_spread.GetValue(), cvar_bloom_blend_correction.GetValue(), 0.0f);
+            cmd_list->PushConstants(m_pcb_pass_cpu);
     
             cmd_list->SetTexture(Renderer_BindingsUav::tex, tex_bloom, 0, 1);
             cmd_list->SetTexture(Renderer_BindingsSrv::tex, tex_in);
@@ -2200,6 +2212,9 @@ namespace spartan
             pso.name             = "bloom_upsample_blend_mip";
             pso.shaders[Compute] = shader_upsample_blend_mip;
             cmd_list->SetPipelineState(pso);
+            m_pcb_pass_cpu.set_f3_value(cvar_bloom_threshold.GetValue(), cvar_bloom_radius.GetValue(), cvar_bloom_knee.GetValue());
+            m_pcb_pass_cpu.set_f3_value2(cvar_bloom_spread.GetValue(), cvar_bloom_blend_correction.GetValue(), 0.0f);
+            cmd_list->PushConstants(m_pcb_pass_cpu);
 
             for (int i = bloom_mip_count - 1; i > 0; i--)
             {
@@ -2232,6 +2247,7 @@ namespace spartan
             cmd_list->SetPipelineState(pso);
 
             m_pcb_pass_cpu.set_f3_value(cvar_bloom.GetValue(), 0.0f, 0.0f);
+            m_pcb_pass_cpu.set_f3_value2(cvar_bloom_spread.GetValue(), cvar_bloom_blend_correction.GetValue(), 0.0f);
             cmd_list->PushConstants(m_pcb_pass_cpu);
 
             cmd_list->SetTexture(Renderer_BindingsUav::tex, tex_out);

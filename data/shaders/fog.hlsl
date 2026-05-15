@@ -28,7 +28,7 @@ float get_fog_atmospheric(const float camera_to_pixel_length, const float pixel_
 {
     float camera_height = get_camera_position().y;
     float density       = pass_get_f3_value().y * 0.0001f;
-    float scale_height  = 50.0f; // Lower = denser near ground, higher = more uniform
+    float scale_height  = max(pass_get_f3_value().z, 0.001f); // Lower = denser near ground, higher = more uniform
     float b             = 1.0f / scale_height;
     float delta_height  = pixel_height_world - camera_height;
     float dist          = camera_to_pixel_length;
@@ -57,7 +57,7 @@ float get_fog_atmospheric(const float camera_to_pixel_length, const float pixel_
     // Beer's law: fog factor = in-scatter (1 - transmittance)
     float transmittance = exp(-tau);
     float fog_factor    = 1.0f - transmittance;
-    fog_factor = pow(fog_factor, 0.8f); // Smooth falloff curve
+    fog_factor = pow(fog_factor, max(pass_get_f3_value2().x, 0.001f)); // Smooth falloff curve
     
     return saturate(fog_factor);
 }
@@ -200,7 +200,7 @@ float3 compute_volumetric_fog(Surface surface, Light light, uint2 pixel_pos)
 {
     // sigma_s is the medium scattering coefficient in 1/m, sigma_t is extinction
     // the engine packs the user facing fog density into pass_get_f3_value().y so r.fog scales it linearly
-    const float sigma_s        = pass_get_f3_value().y * 0.0008f;
+    const float sigma_s        = pass_get_f3_value().y * max(pass_get_f3_value2().y, 0.0f);
     const float sigma_t        = sigma_s; // pure scattering, no absorption
     const float total_distance = surface.camera_to_pixel_length;
 
@@ -220,7 +220,7 @@ float3 compute_volumetric_fog(Surface surface, Light light, uint2 pixel_pos)
 
     if (!light.is_directional())
     {
-        const float volumetric_horizon = 60.0f;
+        const float volumetric_horizon = max(pass_get_f3_value2().z, 0.1f);
         float effective_range          = min(light.far, volumetric_horizon);
 
         // ray sphere intersection around the light position
@@ -256,8 +256,8 @@ float3 compute_volumetric_fog(Surface surface, Light light, uint2 pixel_pos)
     float3 ray_pos = ray_origin + ray_direction * (march_start + temporal_noise * step_length);
 
     // moderate forward scattering, dust beams readable for punctual lights without producing a bright sun halo
-    const float phase_g           = 0.6f;
-    const float min_transmittance = 0.005f;
+    const float phase_g           = clamp(pass_get_f4_value().x, -0.95f, 0.95f);
+    const float min_transmittance = saturate(pass_get_f4_value().y);
 
     // start with the extinction accumulated over the unmarched segment from camera to march_start
     float3 inscatter     = 0.0f;

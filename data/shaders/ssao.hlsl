@@ -24,12 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //====================
 
 // constants
-static const float g_ao_radius    = 1.5f;
-static const float g_ao_intensity = 1.0f;
-static const uint  g_directions   = 3;
-static const uint  g_steps        = 3;
-static const uint  g_sector_count = 32;
-static const float g_thickness    = 1.0f;
+static const uint  g_sector_count_max = 32;
 static const float g_offsets[]    = { 0.0f, 0.5f, 0.25f, 0.75f };
 static const float g_rotations[]  = { 0.1666f, 0.8333f, 0.5f, 0.6666f, 0.3333f, 0.0f };
 
@@ -94,13 +89,13 @@ float3 compute_slice_bent_normal(float h0, float h1, float n)
     return float3(t0, 0.0f, -t1);
 }
 
-uint update_sectors(float minHorizon, float maxHorizon, uint globalOccludedbitmask)
+uint update_sectors(float minHorizon, float maxHorizon, uint sector_count, uint globalOccludedbitmask)
 {
     // convert horizon angles to bitmask
-    uint startHorizonInt        = uint(minHorizon * g_sector_count);
-    float angleHorizon          = (maxHorizon - minHorizon) * g_sector_count;
+    uint startHorizonInt        = uint(minHorizon * sector_count);
+    float angleHorizon          = (maxHorizon - minHorizon) * sector_count;
     uint angleHorizonInt        = uint(ceil(angleHorizon));
-    uint angleHorizonbitmask    = angleHorizonInt > 0 ? (0xFFFFFFFFu >> (g_sector_count - angleHorizonInt)) : 0u;
+    uint angleHorizonbitmask    = angleHorizonInt > 0 ? (0xFFFFFFFFu >> (g_sector_count_max - min(angleHorizonInt, sector_count))) : 0u;
     uint currentOccludedbitmask = angleHorizonbitmask << startHorizonInt;
     return globalOccludedbitmask | currentOccludedbitmask;
 }
@@ -110,11 +105,11 @@ float2 fast_acos2(float2 x)
     return (-0.69813170 * x * x - 0.87266463) * x + 1.57079633;
 }
 
-float2 get_front_back_horizons(float samplingDirection, float3 deltaPos, float3 view_vec, float n)
+float2 get_front_back_horizons(float samplingDirection, float3 deltaPos, float3 view_vec, float n, float thickness)
 {
     // compute horizon angles for front and back faces
     samplingDirection       = -samplingDirection;
-    float3 deltaPosBackface = deltaPos - view_vec * g_thickness;
+    float3 deltaPosBackface = deltaPos - view_vec * thickness;
     float2 frontBackHorizon = float2(dot(normalize(deltaPos), view_vec), dot(normalize(deltaPosBackface), view_vec));
     frontBackHorizon        = fast_acos2(frontBackHorizon);
     frontBackHorizon        = saturate((samplingDirection * -frontBackHorizon - n + PI_HALF) / PI);
@@ -148,13 +143,19 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
     const float3 view_vec                         = normalize(-origin_position);
     
     // falloff and radius calculations
-    const float falloff_range                     = 0.6f * g_ao_radius;
-    const float falloff_from                      = g_ao_radius - falloff_range;
+    const float ao_radius                         = max(pass_get_f3_value().x, 0.0001f);
+    const float ao_intensity                      = max(pass_get_f3_value().y, 0.0001f);
+    const uint  direction_count                   = clamp((uint)round(pass_get_f3_value2().x), 1u, 8u);
+    const uint  step_count                        = clamp((uint)round(pass_get_f3_value2().y), 1u, 8u);
+    const float thickness                         = max(pass_get_f3_value2().z, 0.0f);
+    const float falloff_range                     = max(pass_get_f4_value().x, 0.001f) * ao_radius;
+    const uint  sector_count                      = g_sector_count_max;
+    const float falloff_from                      = ao_radius - falloff_range;
     float falloff_mul                             = -1.0f / falloff_range;
     float falloff_add                             = falloff_from / falloff_range + 1.0f;
     float3 pos_right                              = get_position_view_space(origin_uv + float2(texel_size.x, 0));
     float pixel_dir_rb_viewspace_size_at_center_z = length(pos_right - origin_position);
-    float screenspace_radius                      = g_ao_radius / pixel_dir_rb_viewspace_size_at_center_z;
+    float screenspace_radius                      = ao_radius / pixel_dir_rb_viewspace_size_at_center_z;
     const float pixel_too_close_threshold         = 1.3f;
     const float min_s                             = pixel_too_close_threshold / screenspace_radius;
     const float noise_slice                       = noise_gradient_temporal + offset_rotation_temporal;
@@ -164,11 +165,11 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
     float visibility   = 0.0f;
     float3 bent_normal = 0.0f;
 
-    [unroll]
-    for (uint slice = 0; slice < g_directions; slice++)
+    [loop]
+    for (uint slice = 0; slice < direction_count; slice++)
     {
         // direction logic
-        float slice_k                     = (float(slice) + noise_slice) / float(g_directions);
+        float slice_k                     = (float(slice) + noise_slice) / float(direction_count);
         float phi                         = slice_k * PI;
         float cos_phi                     = cos(phi);
         float sin_phi                     = sin(phi);
@@ -191,13 +192,13 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
         float horizon_cos1     = low_horizon_cos1;
         uint occlusion_bitmask = 0u;
 
-        [unroll]
-        for (uint step = 0; step < g_steps; step++)
+        [loop]
+        for (uint step = 0; step < step_count; step++)
         {
             // step noise and radius
-            float step_base_noise = float(slice + step * g_steps) * 0.6180339887498948482f;
+            float step_base_noise = float(slice + step * step_count) * 0.6180339887498948482f;
             float step_noise      = frac(noise_sample + step_base_noise);
-            float s               = (step + step_noise) / float(g_steps);
+            float s               = (step + step_noise) / float(step_count);
             s                    += min_s;
 
             // sample position
@@ -228,15 +229,15 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
             horizon_cos1 = max(horizon_cos1, shc1);
 
             // update bitmasks
-            float2 fbh0       = get_front_back_horizons(1.0f, sample_delta0, view_vec, n);
-            occlusion_bitmask = update_sectors(fbh0.x, fbh0.y, occlusion_bitmask);
+            float2 fbh0       = get_front_back_horizons(1.0f, sample_delta0, view_vec, n, thickness);
+            occlusion_bitmask = update_sectors(fbh0.x, fbh0.y, sector_count, occlusion_bitmask);
 
-            float2 fbh1       = get_front_back_horizons(-1.0f, sample_delta1, view_vec, n);
-            occlusion_bitmask = update_sectors(fbh1.x, fbh1.y, occlusion_bitmask);
+            float2 fbh1       = get_front_back_horizons(-1.0f, sample_delta1, view_vec, n, thickness);
+            occlusion_bitmask = update_sectors(fbh1.x, fbh1.y, sector_count, occlusion_bitmask);
         }
 
         // accumulate visibility
-        float local_visibility  = (1.0f - float(countbits(occlusion_bitmask)) / float(g_sector_count));
+        float local_visibility  = (1.0f - float(countbits(occlusion_bitmask)) / float(sector_count));
         visibility             += local_visibility;
 
         // compute bent normal
@@ -248,8 +249,8 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
     }
 
     // normalize results
-    visibility /= float(g_directions);
-    visibility  = pow(visibility, g_ao_intensity);
+    visibility /= float(direction_count);
+    visibility  = pow(visibility, ao_intensity);
 
     // world space transformation
     bent_normal = normalize(view_to_world(normalize(bent_normal), false));

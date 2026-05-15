@@ -237,6 +237,13 @@ namespace spartan
         common::resolution_output_width      = output_width;
         common::resolution_output_height     = output_height;
 
+        if (cvar_antialiasing_upsampling.GetValueAs<Renderer_AntiAliasing_Upsampling>() != Renderer_AntiAliasing_Upsampling::AA_Xess_Upscale_Xess)
+        {
+            intel::context_destroy();
+            common::reset_history = true;
+            return;
+        }
+
         if (base_render_changed || output_changed)
         {
             RHI_Device::QueueWaitAll();

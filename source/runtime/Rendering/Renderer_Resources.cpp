@@ -280,6 +280,7 @@ namespace spartan
         bool need_restir = cvar_restir_pt.GetValueAs<bool>() && RHI_Device::IsSupportedRayTracing();
         float restir_scale = cvar_restir_pt_scale.GetValue();
         static float last_restir_scale = -1.0f;
+        static vector<shared_ptr<RHI_Texture>>* retired_restir_targets = new vector<shared_ptr<RHI_Texture>>();
         bool restir_scale_changed = need_restir && at(render_targets, Renderer_RenderTarget::restir_reservoir0) && (last_restir_scale != restir_scale);
 
         if (restir_scale_changed)
@@ -287,12 +288,12 @@ namespace spartan
             for (uint32_t i = 0; i < 15; i++)
             {
                 auto rt = static_cast<Renderer_RenderTarget>(static_cast<uint32_t>(Renderer_RenderTarget::restir_reservoir0) + i);
-                at(render_targets, rt) = nullptr;
+                retired_restir_targets->push_back(at(render_targets, rt));
             }
-            at(render_targets, Renderer_RenderTarget::restir_output)           = nullptr;
-            at(render_targets, Renderer_RenderTarget::restir_denoised)         = nullptr;
-            at(render_targets, Renderer_RenderTarget::restir_denoised_history) = nullptr;
-            at(render_targets, Renderer_RenderTarget::restir_denoised_ping)    = nullptr;
+            retired_restir_targets->push_back(at(render_targets, Renderer_RenderTarget::restir_output));
+            retired_restir_targets->push_back(at(render_targets, Renderer_RenderTarget::restir_denoised));
+            retired_restir_targets->push_back(at(render_targets, Renderer_RenderTarget::restir_denoised_history));
+            retired_restir_targets->push_back(at(render_targets, Renderer_RenderTarget::restir_denoised_ping));
 
             uint32_t restir_out_width  = max(static_cast<uint32_t>(width * restir_scale), 64u);
             uint32_t restir_out_height = max(static_cast<uint32_t>(height * restir_scale), 64u);
@@ -326,12 +327,9 @@ namespace spartan
         }
         else if (!need_restir && at(render_targets, Renderer_RenderTarget::restir_reservoir0))
         {
-            for (uint32_t i = 0; i < 15; i++)
-            {
-                auto rt = static_cast<Renderer_RenderTarget>(static_cast<uint32_t>(Renderer_RenderTarget::restir_reservoir0) + i);
-                at(render_targets, rt) = nullptr;
-            }
-            last_restir_scale = -1.0f;
+            // Keep ReSTIR resources alive after a runtime disable. Destroying these textures
+            // while the renderer is running can stall or destabilise the graphics driver on
+            // some Vulkan/NVIDIA paths; the passes below clear and ignore the retained targets.
         }
         
     }
