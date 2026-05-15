@@ -109,12 +109,14 @@ namespace spartan
 
             bool has_directional_light = directional_light != nullptr;
             float current_coverage     = cvar_cloud_coverage.GetValue();
+            float current_brightness   = cvar_minotaur_skybox_brightness.GetValue();
 
             bool light_changed = (has_directional_light && directional_light->NeedsSkysphereUpdate()) ||
                                  (has_directional_light != m_pass_state.sky_had_directional_light);
             bool cloud_params_changed = current_coverage != m_pass_state.sky_last_coverage;
+            bool skybox_changed       = current_brightness != m_pass_state.sky_last_brightness;
 
-            if (m_pass_state.sky_first_frame || light_changed || cloud_params_changed)
+            if (m_pass_state.sky_first_frame || light_changed || cloud_params_changed || skybox_changed)
             {
                 m_pass_state.sky_frames_remaining = temporal_convergence_frames;
             }
@@ -129,6 +131,7 @@ namespace spartan
             m_pass_state.sky_first_frame           = false;
             m_pass_state.sky_had_directional_light = has_directional_light;
             m_pass_state.sky_last_coverage         = current_coverage;
+            m_pass_state.sky_last_brightness       = current_brightness;
         }
 
         // -------------------------------------------------------------------------

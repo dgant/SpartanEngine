@@ -370,6 +370,7 @@ namespace spartan
             bool     sky_first_frame           = true;
             bool     sky_had_directional_light = false;
             float    sky_last_coverage         = -1.0f;
+            float    sky_last_brightness       = -1.0f;
             uint32_t sky_frames_remaining      = 0;
 
             // vrs
