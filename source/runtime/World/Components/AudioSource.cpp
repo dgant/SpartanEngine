@@ -634,95 +634,97 @@ namespace spartan
         if (!m_stream || !m_is_playing)
             return;
 
-        int queued               = SDL_GetAudioStreamQueued(m_stream);
-        const int low_water_mark = 16384;
-        if (queued >= low_water_mark)
-            return;
-
+        int queued                       = SDL_GetAudioStreamQueued(m_stream);
+        const int low_water_mark         = 16384;
         const uint32_t target_mono_samples = 2048;
-        uint32_t bytes_to_add = target_mono_samples * sizeof(float);
-        if (m_position + bytes_to_add > m_clip->length)
+        while (queued < low_water_mark)
         {
-            bytes_to_add = m_clip->length - m_position;
-        }
-
-        if (bytes_to_add == 0)
-        {
-            if (m_loop)
+            uint32_t bytes_to_add = target_mono_samples * sizeof(float);
+            if (m_position + bytes_to_add > m_clip->length)
             {
-                m_position = 0;
-                bytes_to_add = min<uint32_t>(target_mono_samples * sizeof(float), m_clip->length);
-            }
-            else
-            {
-                StopClip();
-                return;
-            }
-        }
-
-        uint32_t num_samples = bytes_to_add / sizeof(float);
-        float* mono_samples  = reinterpret_cast<float*>(m_clip->buffer + m_position);
-        m_stereo_chunk.resize(num_samples * 2); // reuses capacity, no allocation if size fits
-        float gain           = m_volume * m_attenuation * (m_mute ? 0.0f : 1.0f);
-
-        // constant power panning
-        float left_factor    = sqrt(0.5f * (1.0f - m_pan));
-        float right_factor   = sqrt(0.5f * (1.0f + m_pan));
-        float left_gain      = gain * left_factor;
-        float right_gain     = gain * right_factor;
-        for (uint32_t i = 0; i < num_samples; ++i)
-        {
-            float sample = mono_samples[i];
-            m_stereo_chunk[2 * i] = sample * left_gain;
-            m_stereo_chunk[2 * i + 1]= sample * right_gain;
-        }
-
-        // apply reverb effect using a feedback delay network
-        // 6 taps with long delays for large-space character (tunnels, halls)
-        if (m_reverb_enabled && !m_reverb_buffer_l.empty())
-        {
-            const uint32_t base_delays[6] = { 4799, 6907, 8893, 10007, 11903, 13313 };
-            const float room_scale        = 0.3f + m_reverb_room_size * 0.7f;
-            uint32_t delays[6];
-            for (int d = 0; d < 6; ++d)
-            {
-                delays[d] = static_cast<uint32_t>(base_delays[d] * room_scale);
+                bytes_to_add = m_clip->length - m_position;
             }
 
-            const float tap_gain = 1.0f / 6.0f;
-            const float feedback = m_reverb_decay * 0.85f;
-            const float wet      = m_reverb_wet;
-            const float dry      = 1.0f - wet * 0.4f;
+            if (bytes_to_add == 0)
+            {
+                if (m_loop)
+                {
+                    m_position = 0;
+                    bytes_to_add = min<uint32_t>(target_mono_samples * sizeof(float), m_clip->length);
+                }
+                else
+                {
+                    StopClip();
+                    return;
+                }
+            }
 
+            uint32_t num_samples = bytes_to_add / sizeof(float);
+            float* mono_samples  = reinterpret_cast<float*>(m_clip->buffer + m_position);
+            m_stereo_chunk.resize(num_samples * 2); // reuses capacity, no allocation if size fits
+            float gain           = m_volume * m_attenuation * (m_mute ? 0.0f : 1.0f);
+
+            // constant power panning
+            float left_factor    = sqrt(0.5f * (1.0f - m_pan));
+            float right_factor   = sqrt(0.5f * (1.0f + m_pan));
+            float left_gain      = gain * left_factor;
+            float right_gain     = gain * right_factor;
             for (uint32_t i = 0; i < num_samples; ++i)
             {
-                float dry_l = m_stereo_chunk[2 * i];
-                float dry_r = m_stereo_chunk[2 * i + 1];
+                float sample = mono_samples[i];
+                m_stereo_chunk[2 * i] = sample * left_gain;
+                m_stereo_chunk[2 * i + 1]= sample * right_gain;
+            }
 
-                float reverb_l = 0.0f;
-                float reverb_r = 0.0f;
+            // apply reverb effect using a feedback delay network
+            // 6 taps with long delays for large-space character (tunnels, halls)
+            if (m_reverb_enabled && !m_reverb_buffer_l.empty())
+            {
+                const uint32_t base_delays[6] = { 4799, 6907, 8893, 10007, 11903, 13313 };
+                const float room_scale        = 0.3f + m_reverb_room_size * 0.7f;
+                uint32_t delays[6];
                 for (int d = 0; d < 6; ++d)
                 {
-                    uint32_t read_pos_l = (m_reverb_write_pos + reverb_buffer_size - delays[d]) % reverb_buffer_size;
-                    uint32_t read_pos_r = (m_reverb_write_pos + reverb_buffer_size - delays[d] - 181) % reverb_buffer_size;
-                    reverb_l += m_reverb_buffer_l[read_pos_l] * tap_gain;
-                    reverb_r += m_reverb_buffer_r[read_pos_r] * tap_gain;
+                    delays[d] = static_cast<uint32_t>(base_delays[d] * room_scale);
                 }
 
-                m_reverb_buffer_l[m_reverb_write_pos] = dry_l + reverb_l * feedback;
-                m_reverb_buffer_r[m_reverb_write_pos] = dry_r + reverb_r * feedback;
+                const float tap_gain = 1.0f / 6.0f;
+                const float feedback = m_reverb_decay * 0.85f;
+                const float wet      = m_reverb_wet;
+                const float dry      = 1.0f - wet * 0.4f;
 
-                m_stereo_chunk[2 * i]     = dry_l * dry + reverb_l * wet;
-                m_stereo_chunk[2 * i + 1] = dry_r * dry + reverb_r * wet;
+                for (uint32_t i = 0; i < num_samples; ++i)
+                {
+                    float dry_l = m_stereo_chunk[2 * i];
+                    float dry_r = m_stereo_chunk[2 * i + 1];
 
-                m_reverb_write_pos = (m_reverb_write_pos + 1) % reverb_buffer_size;
+                    float reverb_l = 0.0f;
+                    float reverb_r = 0.0f;
+                    for (int d = 0; d < 6; ++d)
+                    {
+                        uint32_t read_pos_l = (m_reverb_write_pos + reverb_buffer_size - delays[d]) % reverb_buffer_size;
+                        uint32_t read_pos_r = (m_reverb_write_pos + reverb_buffer_size - delays[d] - 181) % reverb_buffer_size;
+                        reverb_l += m_reverb_buffer_l[read_pos_l] * tap_gain;
+                        reverb_r += m_reverb_buffer_r[read_pos_r] * tap_gain;
+                    }
+
+                    m_reverb_buffer_l[m_reverb_write_pos] = dry_l + reverb_l * feedback;
+                    m_reverb_buffer_r[m_reverb_write_pos] = dry_r + reverb_r * feedback;
+
+                    m_stereo_chunk[2 * i]     = dry_l * dry + reverb_l * wet;
+                    m_stereo_chunk[2 * i + 1] = dry_r * dry + reverb_r * wet;
+
+                    m_reverb_write_pos = (m_reverb_write_pos + 1) % reverb_buffer_size;
+                }
             }
-        }
 
-        if (!SDL_PutAudioStreamData(m_stream, m_stereo_chunk.data(), static_cast<int>(m_stereo_chunk.size() * sizeof(float))))
-        {
-            SP_LOG_ERROR("%s", SDL_GetError());
+            if (!SDL_PutAudioStreamData(m_stream, m_stereo_chunk.data(), static_cast<int>(m_stereo_chunk.size() * sizeof(float))))
+            {
+                SP_LOG_ERROR("%s", SDL_GetError());
+                return;
+            }
+            m_position += bytes_to_add;
+            queued = SDL_GetAudioStreamQueued(m_stream);
         }
-        m_position += bytes_to_add;
     }
 }
