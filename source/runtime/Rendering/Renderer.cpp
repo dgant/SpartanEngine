@@ -1728,6 +1728,12 @@ namespace spartan
                 if (!material)
                     continue;
 
+                // Respect the renderable shadow flag for ray queries as well. Transparent
+                // emissive billboards are composited after lighting and should not become
+                // visibility/GI blockers in the acceleration structure.
+                if (!renderable->HasFlag(RenderableFlags::CastsShadows))
+                    continue;
+
                 uint64_t device_address = renderable->GetAccelerationStructureDeviceAddress();
                 if (device_address == 0)
                     continue;
