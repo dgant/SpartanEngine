@@ -110,6 +110,8 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
     float3 light_gi            = 0.0f;
     float alpha                = 0.0f;
     float distance_from_camera = 0.0f;
+    float skybox_brightness    = max(pass_get_f4_value().w, 0.0f);
+    float sky_ibl_intensity    = max(pass_get_f3_value().x, 0.0f);
 
     // during the compute pass, fill in the sky pixels
     if (surface.is_sky() && pass_is_opaque())
@@ -123,7 +125,6 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
         float3 view_dir_sky  = surface.camera_to_pixel;
         view_dir_sky.y       = max(view_dir_sky.y, 0.0f);
         view_dir_sky         = normalize(view_dir_sky);
-        float skybox_brightness = max(pass_get_f4_value().w, 0.0f);
         light_emissive       = tex2.SampleLevel(samplers[sampler_bilinear_clamp], direction_sphere_uv(view_dir_sky), 0).rgb * skybox_brightness;
         alpha                = 0.0f;
         distance_from_camera = FLT_MAX_16;
@@ -174,14 +175,14 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
         float3 view_dir_sky = float3(view_dir.x, max(view_dir.y, 0.0f), view_dir.z);
         view_dir_sky        = normalize(view_dir_sky);
         float2 view_uv        = direction_sphere_uv(view_dir_sky);
-        float3 sky_color_view = tex2.SampleLevel(samplers[sampler_trilinear_clamp], view_uv, sky_mip).rgb;
+        float3 sky_color_view = tex2.SampleLevel(samplers[sampler_trilinear_clamp], view_uv, sky_mip).rgb * sky_ibl_intensity;
     
         // sample sky in the light direction
         Light light;
         light.Build(0, surface); // light 0 is always directional
         float3 light_dir       = normalize(-light.forward);
         float2 light_uv        = direction_sphere_uv(light_dir);
-        float3 sky_color_light = tex2.SampleLevel(samplers[sampler_trilinear_clamp], light_uv, sky_mip).rgb;
+        float3 sky_color_light = tex2.SampleLevel(samplers[sampler_trilinear_clamp], light_uv, sky_mip).rgb * sky_ibl_intensity;
     
         // henyey-greenstein phase function for forward scattering
         float g = 0.8f; // forward scattering strength

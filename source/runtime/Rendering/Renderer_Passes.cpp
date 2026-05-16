@@ -1814,7 +1814,7 @@ namespace spartan
             cmd_list->SetPipelineState(pso);
 
             m_pcb_pass_cpu.is_transparent = is_transparent_pass ? 1 : 0;
-            m_pcb_pass_cpu.set_f3_value(0.0f, cvar_fog.GetValue(), cvar_fog_height_scale.GetValue());
+            m_pcb_pass_cpu.set_f3_value(cvar_minotaur_sky_ibl.GetValue(), cvar_fog.GetValue(), cvar_fog_height_scale.GetValue());
             m_pcb_pass_cpu.set_f3_value2(cvar_fog_falloff_power.GetValue(), cvar_fog_volumetric_density.GetValue(), cvar_fog_volumetric_horizon.GetValue());
             m_pcb_pass_cpu.set_f4_value(cvar_fog_phase.GetValue(), cvar_fog_min_transmittance.GetValue(), cvar_restir_pt_intensity.GetValue(), cvar_minotaur_skybox_brightness.GetValue());
             cmd_list->PushConstants(m_pcb_pass_cpu);
