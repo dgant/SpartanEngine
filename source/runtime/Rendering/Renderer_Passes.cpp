@@ -109,14 +109,12 @@ namespace spartan
 
             bool has_directional_light = directional_light != nullptr;
             float current_coverage     = cvar_cloud_coverage.GetValue();
-            float current_brightness   = cvar_minotaur_skybox_brightness.GetValue();
 
             bool light_changed = (has_directional_light && directional_light->NeedsSkysphereUpdate()) ||
                                  (has_directional_light != m_pass_state.sky_had_directional_light);
             bool cloud_params_changed = current_coverage != m_pass_state.sky_last_coverage;
-            bool skybox_changed       = current_brightness != m_pass_state.sky_last_brightness;
 
-            if (m_pass_state.sky_first_frame || light_changed || cloud_params_changed || skybox_changed)
+            if (m_pass_state.sky_first_frame || light_changed || cloud_params_changed)
             {
                 m_pass_state.sky_frames_remaining = temporal_convergence_frames;
             }
@@ -131,7 +129,6 @@ namespace spartan
             m_pass_state.sky_first_frame           = false;
             m_pass_state.sky_had_directional_light = has_directional_light;
             m_pass_state.sky_last_coverage         = current_coverage;
-            m_pass_state.sky_last_brightness       = current_brightness;
         }
 
         // -------------------------------------------------------------------------
@@ -1708,7 +1705,7 @@ namespace spartan
                     cmd_list->SetTexture(Renderer_BindingsSrv::tex3d_cloud_detail, tex_cloud_detail);
 
                 // shader reads buffer_pass via get_camera_position so push constants must be set
-                m_pcb_pass_cpu.set_f3_value(cvar_minotaur_skybox_brightness.GetValue(), 0.0f, 0.0f);
+                m_pcb_pass_cpu.set_f3_value(1.0f, 0.0f, 0.0f);
                 cmd_list->PushConstants(m_pcb_pass_cpu);
                 cmd_list->Dispatch(tex_skysphere);
             }
@@ -1819,7 +1816,7 @@ namespace spartan
             m_pcb_pass_cpu.is_transparent = is_transparent_pass ? 1 : 0;
             m_pcb_pass_cpu.set_f3_value(0.0f, cvar_fog.GetValue(), cvar_fog_height_scale.GetValue());
             m_pcb_pass_cpu.set_f3_value2(cvar_fog_falloff_power.GetValue(), cvar_fog_volumetric_density.GetValue(), cvar_fog_volumetric_horizon.GetValue());
-            m_pcb_pass_cpu.set_f4_value(cvar_fog_phase.GetValue(), cvar_fog_min_transmittance.GetValue(), cvar_restir_pt_intensity.GetValue(), 0.0f);
+            m_pcb_pass_cpu.set_f4_value(cvar_fog_phase.GetValue(), cvar_fog_min_transmittance.GetValue(), cvar_restir_pt_intensity.GetValue(), cvar_minotaur_skybox_brightness.GetValue());
             cmd_list->PushConstants(m_pcb_pass_cpu);
 
             SetCommonTextures(cmd_list, eye_layer);

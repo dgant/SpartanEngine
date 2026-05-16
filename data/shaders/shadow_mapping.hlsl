@@ -186,6 +186,14 @@ float vogel_depth(Light light, Surface surface, float3 sample_coords, float rece
 // compute depth bias using slope-scaled technique in world space
 float3 compute_normal_offset(Surface surface, Light light, uint cascade_index)
 {
+    // Perspective point-light shadow maps need a small world-space bias. The
+    // orthographic texel-size estimate below is for directional cascades and
+    // can over-bias small nearby occluders such as Minotaur torch sconces.
+    if (light.is_point())
+    {
+        return surface.normal * 0.003f;
+    }
+
     // calculate world-space texel size from projection matrix
     float world_frustum_width = 2.0f / length(light.transform[cascade_index][0].xyz);
     float texel_size_world    = world_frustum_width * light.atlas_texel_size[cascade_index].x;

@@ -123,7 +123,8 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
         float3 view_dir_sky  = surface.camera_to_pixel;
         view_dir_sky.y       = max(view_dir_sky.y, 0.0f);
         view_dir_sky         = normalize(view_dir_sky);
-        light_emissive       = tex2.SampleLevel(samplers[sampler_bilinear_clamp], direction_sphere_uv(view_dir_sky), 0).rgb;
+        float skybox_brightness = max(pass_get_f4_value().w, 0.0f);
+        light_emissive       = tex2.SampleLevel(samplers[sampler_bilinear_clamp], direction_sphere_uv(view_dir_sky), 0).rgb * skybox_brightness;
         alpha                = 0.0f;
         distance_from_camera = FLT_MAX_16;
     }

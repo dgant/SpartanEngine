@@ -1803,6 +1803,8 @@ namespace spartan
             light->ClearAtlasRectangles();
             if (light->GetIndex() == numeric_limits<uint32_t>::max())
                 continue;
+            if (light->GetIntensityRadiometric() == 0.0f || !light->IsActiveByDistance())
+                continue;
             // skip lights that are out of shadow distance, the shader and shadow pass
             // both rely on rect.IsDefined() so leaving them unallocated is enough
             if (!light->IsShadowEffective())
