@@ -365,10 +365,10 @@ namespace spartan
         if (World::GetLightCount() == 0)
             return;
 
-        // skip when ray traced shadows or restir pt own the shadow term
-        // light.hlsl never samples the atlas in those branches so this pass is pure waste
+        // Skip only when ray traced shadows own the shadow term.
+        // ReSTIR/GI is an indirect-lighting contribution; direct lights still sample raster shadow maps.
         bool tlas_available  = RHI_Device::IsSupportedRayTracing() && GetTopLevelAccelerationStructure() != nullptr;
-        bool rt_owns_shadows = (cvar_ray_traced_shadows.GetValueAs<bool>() && tlas_available) || cvar_restir_pt.GetValueAs<bool>();
+        bool rt_owns_shadows = cvar_ray_traced_shadows.GetValueAs<bool>() && tlas_available;
         if (rt_owns_shadows)
             return;
 
