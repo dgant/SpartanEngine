@@ -58,6 +58,7 @@ namespace spartan
         static void* GetHandleRaw();
         static void Close();
         static bool IsMinimized();
+        static bool IsFocused();
         static bool IsMaximized();
         static bool IsFullScreen();
         static bool WantsToClose();

@@ -100,6 +100,7 @@ namespace spartan
     array<Sb_Aabb, rhi_max_array_size> Renderer::m_bindless_aabbs;
     unique_ptr<RHI_AccelerationStructure> m_tlas;
     uint32_t Renderer::m_count_active_lights = 0;
+    shared_ptr<RHI_Texture> Renderer::m_minotaur_hdri_texture;
 
     namespace
     {

@@ -188,6 +188,8 @@ namespace spartan
     TConsoleVar<float> cvar_minotaur_sky_ibl               ("r.minotaur_sky_ibl",               1.0f,                                                    "minotaur sky image-based lighting intensity");
     TConsoleVar<float> cvar_minotaur_moon_bounce           ("r.minotaur_moon_bounce",           1.0f,                                                    "minotaur moonlight indirect interior bounce");
     TConsoleVar<float> cvar_minotaur_skybox_brightness     ("r.minotaur_skybox_brightness",     1.0f,                                                    "minotaur visible skybox brightness");
+    TConsoleVar<float> cvar_minotaur_hdri_skybox           ("r.minotaur_hdri_skybox",           0.0f,                                                    "use Minotaur HDRI texture for visible sky");
+    TConsoleVar<float> cvar_minotaur_hdri_ibl              ("r.minotaur_hdri_ibl",              0.0f,                                                    "use Minotaur HDRI texture for sky image-based lighting");
     TConsoleVar<float> cvar_ssao                           ("r.ssao",                           1.0f,                                                    "screen space ambient occlusion");
     TConsoleVar<float> cvar_ssao_radius                    ("r.ssao_radius",                    1.5f,                                                    "screen space ambient occlusion radius");
     TConsoleVar<float> cvar_ssao_intensity                 ("r.ssao_intensity",                 1.0f,                                                    "screen space ambient occlusion power");

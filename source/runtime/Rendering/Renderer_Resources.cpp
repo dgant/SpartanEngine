@@ -843,6 +843,16 @@ namespace spartan
         return render_targets[static_cast<uint8_t>(type)].get();
     }
 
+    RHI_Texture* Renderer::GetMinotaurHdriTexture()
+    {
+        return m_minotaur_hdri_texture.get();
+    }
+
+    void Renderer::SetMinotaurHdriTexture(const shared_ptr<RHI_Texture>& texture)
+    {
+        m_minotaur_hdri_texture = texture;
+    }
+
     RHI_Shader* Renderer::GetShader(const Renderer_Shader type)
     {
         return shaders[static_cast<uint8_t>(type)].get();

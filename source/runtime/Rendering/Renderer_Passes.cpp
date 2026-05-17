@@ -1088,6 +1088,7 @@ namespace spartan
         RHI_Texture* tex_reflections_normal   = GetRenderTarget(Renderer_RenderTarget::gbuffer_reflections_normal);
         RHI_Texture* tex_reflections_albedo   = GetRenderTarget(Renderer_RenderTarget::gbuffer_reflections_albedo);
         RHI_Texture* tex_skysphere            = GetRenderTarget(Renderer_RenderTarget::skysphere);
+        RHI_Texture* tex_ibl                  = (cvar_minotaur_hdri_ibl.GetValueAs<bool>() && GetMinotaurHdriTexture()) ? GetMinotaurHdriTexture() : tex_skysphere;
         
         if (!tex_reflections_position)
             return;
@@ -1100,7 +1101,7 @@ namespace spartan
             tex_reflections_position->SetLayout(RHI_Image_Layout::Shader_Read, cmd_list);
             tex_reflections_normal->SetLayout(RHI_Image_Layout::Shader_Read, cmd_list);
             tex_reflections_albedo->SetLayout(RHI_Image_Layout::Shader_Read, cmd_list);
-            tex_skysphere->SetLayout(RHI_Image_Layout::Shader_Read, cmd_list);
+            tex_ibl->SetLayout(RHI_Image_Layout::Shader_Read, cmd_list);
 
             RHI_PipelineState pso;
             pso.name             = "light_reflections";
@@ -1112,7 +1113,7 @@ namespace spartan
             cmd_list->SetTexture(Renderer_BindingsSrv::tex,  tex_reflections_position);
             cmd_list->SetTexture(Renderer_BindingsSrv::tex2, tex_reflections_normal);
             cmd_list->SetTexture(Renderer_BindingsSrv::tex3, tex_reflections_albedo);
-            cmd_list->SetTexture(Renderer_BindingsSrv::tex4, tex_skysphere);
+            cmd_list->SetTexture(Renderer_BindingsSrv::tex4, tex_ibl);
             cmd_list->SetTexture(static_cast<uint32_t>(Renderer_BindingsUav::tex), tex_reflections, rhi_all_mips, 0, true);
 
             // bind tlas for inline ray traced shadows at the hit, every light type uses this
@@ -1125,7 +1126,7 @@ namespace spartan
                 }
             }
             
-            m_pcb_pass_cpu.set_f3_value(static_cast<float>(m_count_active_lights), static_cast<float>(tex_skysphere->GetMipCount()), cvar_minotaur_sky_ibl.GetValue());
+            m_pcb_pass_cpu.set_f3_value(static_cast<float>(m_count_active_lights), static_cast<float>(tex_ibl->GetMipCount()), cvar_minotaur_sky_ibl.GetValue());
             cmd_list->PushConstants(m_pcb_pass_cpu);
             
             cmd_list->Dispatch(tex_reflections);
@@ -1798,6 +1799,7 @@ namespace spartan
         RHI_Shader* shader_c              = GetShader(Renderer_Shader::light_composition_c);
         RHI_Texture* tex_out              = GetRenderTarget(Renderer_RenderTarget::frame_render);
         RHI_Texture* tex_skysphere        = GetRenderTarget(Renderer_RenderTarget::skysphere);
+        RHI_Texture* tex_skybox           = (cvar_minotaur_hdri_skybox.GetValueAs<bool>() && GetMinotaurHdriTexture()) ? GetMinotaurHdriTexture() : tex_skysphere;
         RHI_Texture* tex_light_diffuse    = GetRenderTarget(Renderer_RenderTarget::light_diffuse);
         RHI_Texture* tex_light_specular   = GetRenderTarget(Renderer_RenderTarget::light_specular);
         RHI_Texture* tex_light_volumetric = GetRenderTarget(Renderer_RenderTarget::light_volumetric);
@@ -1821,7 +1823,8 @@ namespace spartan
 
             SetCommonTextures(cmd_list, eye_layer);
             cmd_list->SetTexture(Renderer_BindingsUav::tex,  tex_out);
-            cmd_list->SetTexture(Renderer_BindingsSrv::tex2, tex_skysphere);
+            tex_skybox->SetLayout(RHI_Image_Layout::Shader_Read, cmd_list);
+            cmd_list->SetTexture(Renderer_BindingsSrv::tex2, tex_skybox);
             cmd_list->SetTexture(Renderer_BindingsSrv::tex3, tex_light_diffuse);
             cmd_list->SetTexture(Renderer_BindingsSrv::tex4, tex_light_specular);
             cmd_list->SetTexture(Renderer_BindingsSrv::tex5, tex_light_volumetric);
@@ -1847,9 +1850,11 @@ namespace spartan
             cmd_list->SetTexture(Renderer_BindingsUav::tex,     tex_out);
             cmd_list->SetTexture(Renderer_BindingsUav::tex_sss, GetRenderTarget(Renderer_RenderTarget::sss));
             cmd_list->SetTexture(Renderer_BindingsSrv::tex2,    GetRenderTarget(Renderer_RenderTarget::lut_brdf_specular));
-            cmd_list->SetTexture(Renderer_BindingsSrv::tex3,    GetRenderTarget(Renderer_RenderTarget::skysphere));
+            RHI_Texture* tex_ibl = (cvar_minotaur_hdri_ibl.GetValueAs<bool>() && GetMinotaurHdriTexture()) ? GetMinotaurHdriTexture() : GetRenderTarget(Renderer_RenderTarget::skysphere);
+            tex_ibl->SetLayout(RHI_Image_Layout::Shader_Read, cmd_list);
+            cmd_list->SetTexture(Renderer_BindingsSrv::tex3,    tex_ibl);
 
-            m_pcb_pass_cpu.set_f3_value(static_cast<float>(GetRenderTarget(Renderer_RenderTarget::skysphere)->GetMipCount()), cvar_minotaur_sky_ibl.GetValue(), cvar_minotaur_moon_bounce.GetValue());
+            m_pcb_pass_cpu.set_f3_value(static_cast<float>(tex_ibl->GetMipCount()), cvar_minotaur_sky_ibl.GetValue(), cvar_minotaur_moon_bounce.GetValue());
             cmd_list->PushConstants(m_pcb_pass_cpu);
             cmd_list->Dispatch(tex_out, Renderer::GetResolutionScale());
         }

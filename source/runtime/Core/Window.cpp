@@ -476,6 +476,11 @@ namespace spartan
         return SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED;
     }
 
+    bool Window::IsFocused()
+    {
+        return SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS;
+    }
+
     bool Window::IsFullScreen()
     {
         return SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN;
