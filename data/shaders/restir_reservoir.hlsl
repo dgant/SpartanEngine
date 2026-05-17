@@ -23,9 +23,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SPARTAN_RESTIR_RESERVOIR
 
 // core parameters
-static const uint  RESTIR_MAX_PATH_LENGTH    = 5;
+static const uint  RESTIR_MAX_PATH_LENGTH    = 3;
 static const uint  RESTIR_M_CAP              = 256;
-static const uint  RESTIR_SPATIAL_SAMPLES    = 8;
+static const uint  RESTIR_SPATIAL_SAMPLES    = 2;
 static const float RESTIR_DEPTH_THRESHOLD    = 0.05f;
 static const float RESTIR_NORMAL_THRESHOLD   = 0.75f;
 static const float RESTIR_TEMPORAL_DECAY     = 0.97f;

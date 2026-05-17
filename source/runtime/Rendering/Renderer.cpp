@@ -260,10 +260,12 @@ namespace spartan
 
         {
             DestroyResources();
+            RHI_Device::DeletionQueueFlush();
             GeometryBuffer::Shutdown();
             swapchain             = nullptr;
             m_lines_vertex_buffer = nullptr;
             m_tlas                = nullptr;
+            RHI_Device::DeletionQueueFlush();
         }
 
         RHI_VendorTechnology::Shutdown();

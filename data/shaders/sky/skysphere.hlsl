@@ -1205,7 +1205,7 @@ void main_cs(uint3 tid : SV_DispatchThreadID)
     float3 luminance = compute_sky_luminance(cam_pos, view_dir, sun_dir, tex, tex2,
                                               GET_SAMPLER(sampler_bilinear_clamp), 0.5);
     
-    // sun disc only, all night celestials are gathered below
+    // sun disc intentionally disabled for Minotaur; all night celestials are gathered below
     float3 sun_col = float3(0, 0, 0);
     
     // ground fade for the bottom hemisphere, fully gone within ~7 degrees below the horizon
@@ -1223,10 +1223,7 @@ void main_cs(uint3 tid : SV_DispatchThreadID)
     }
     else if (sun_elev > -0.02)
     {
-        float3 cam_up    = normalize(cam_pos - earth_center);
-        float2 sun_uv    = transmittance_lut_params_to_uv(length(cam_pos - earth_center), max(dot(cam_up, sun_dir), 0.0));
-        float3 sun_trans = tex.SampleLevel(GET_SAMPLER(sampler_bilinear_clamp), sun_uv, 0).rgb;
-        sun_col          = compute_sun_disc(orig_view, sun_dir, sun_trans) * smoothstep(-0.02, 0.02, sun_elev);
+        sun_col          = float3(0, 0, 0);
     }
     
     // intensity scaling

@@ -174,7 +174,17 @@ namespace spartan
                     {
                         const char* version_driver = vulkan_version::to_c_str(driver_version);
                         const char* version_sdk    = vulkan_version::to_c_str(sdk_version);
-                        SP_LOG_WARNING("Using Vulkan %s, update drivers or wait for GPU vendor to support Vulkan %s, engine may still work", version_driver, version_sdk);
+                        bool same_major_minor =
+                            VK_API_VERSION_MAJOR(sdk_version) == VK_API_VERSION_MAJOR(driver_version) &&
+                            VK_API_VERSION_MINOR(sdk_version) == VK_API_VERSION_MINOR(driver_version);
+                        if (same_major_minor)
+                        {
+                            SP_LOG_INFO("Using Vulkan %s with SDK headers %s", version_driver, version_sdk);
+                        }
+                        else
+                        {
+                            SP_LOG_WARNING("Using Vulkan %s, update drivers or wait for GPU vendor to support Vulkan %s, engine may still work", version_driver, version_sdk);
+                        }
                     }
 
                     // ensure that the machine supports Vulkan 1.4 (as we are using extensions from it)
@@ -652,6 +662,15 @@ namespace spartan
         void destroy()
         {
             SP_ASSERT(allocator != nullptr);
+            if (!allocations.empty())
+            {
+                for (const auto& allocation_entry : allocations)
+                {
+                    VmaAllocationInfo allocation_info = {};
+                    vmaGetAllocationInfo(allocator, allocation_entry.second, &allocation_info);
+                    SP_LOG_ERROR("Live VMA allocation at shutdown: %s", allocation_info.pName ? allocation_info.pName : "(unnamed)");
+                }
+            }
             SP_ASSERT_MSG(allocations.empty(), "There are still allocations");
             vmaDestroyAllocator(allocator);
             allocator = nullptr;

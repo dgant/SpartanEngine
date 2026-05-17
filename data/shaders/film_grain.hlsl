@@ -23,7 +23,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "common.hlsl"
 //====================
 
-static const float g_film_grain_intensity = 0.002f;
+static const float g_film_grain_intensity = 0.02f;
 static const float g_film_grain_speed     = 3.0f;
 static const float g_film_grain_mean      = 0.0f; // What gray level noise should tend to.
 static const float g_film_grain_variance  = 0.5f; // Controls the contrast/variance of noise.

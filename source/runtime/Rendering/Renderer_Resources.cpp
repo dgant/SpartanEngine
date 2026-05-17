@@ -64,6 +64,7 @@ namespace spartan
         array<shared_ptr<RHI_Shader>,  static_cast<uint32_t>(Renderer_Shader::max)>       shaders;
         array<shared_ptr<RHI_Sampler>, static_cast<uint32_t>(Renderer_Sampler::Max)>      samplers;
         array<shared_ptr<RHI_Buffer>,  static_cast<uint32_t>(Renderer_Buffer::Max)>       buffers;
+        vector<shared_ptr<RHI_Texture>> retired_restir_targets;
 
         // asset resources
         array<shared_ptr<RHI_Texture>, static_cast<uint32_t>(Renderer_StandardTexture::Max)> standard_textures;
@@ -280,7 +281,6 @@ namespace spartan
         bool need_restir = (cvar_restir_pt.GetValueAs<bool>() || cvar_restir_pt_preallocate.GetValueAs<bool>()) && RHI_Device::IsSupportedRayTracing();
         float restir_scale = cvar_restir_pt_scale.GetValue();
         static float last_restir_scale = -1.0f;
-        static vector<shared_ptr<RHI_Texture>>* retired_restir_targets = new vector<shared_ptr<RHI_Texture>>();
         bool restir_scale_changed = need_restir && at(render_targets, Renderer_RenderTarget::restir_reservoir0) && (last_restir_scale != restir_scale);
 
         if (restir_scale_changed)
@@ -288,12 +288,12 @@ namespace spartan
             for (uint32_t i = 0; i < 15; i++)
             {
                 auto rt = static_cast<Renderer_RenderTarget>(static_cast<uint32_t>(Renderer_RenderTarget::restir_reservoir0) + i);
-                retired_restir_targets->push_back(at(render_targets, rt));
+                retired_restir_targets.push_back(at(render_targets, rt));
             }
-            retired_restir_targets->push_back(at(render_targets, Renderer_RenderTarget::restir_output));
-            retired_restir_targets->push_back(at(render_targets, Renderer_RenderTarget::restir_denoised));
-            retired_restir_targets->push_back(at(render_targets, Renderer_RenderTarget::restir_denoised_history));
-            retired_restir_targets->push_back(at(render_targets, Renderer_RenderTarget::restir_denoised_ping));
+            retired_restir_targets.push_back(at(render_targets, Renderer_RenderTarget::restir_output));
+            retired_restir_targets.push_back(at(render_targets, Renderer_RenderTarget::restir_denoised));
+            retired_restir_targets.push_back(at(render_targets, Renderer_RenderTarget::restir_denoised_history));
+            retired_restir_targets.push_back(at(render_targets, Renderer_RenderTarget::restir_denoised_ping));
 
             uint32_t restir_out_width  = max(static_cast<uint32_t>(width * restir_scale), 64u);
             uint32_t restir_out_height = max(static_cast<uint32_t>(height * restir_scale), 64u);
@@ -789,6 +789,7 @@ namespace spartan
 
     void Renderer::DestroyResources()
     {
+        retired_restir_targets.clear();
         render_targets.fill(nullptr);
         shaders.fill(nullptr);
         samplers.fill(nullptr);

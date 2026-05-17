@@ -1125,7 +1125,7 @@ namespace spartan
                 }
             }
             
-            m_pcb_pass_cpu.set_f3_value(static_cast<float>(m_count_active_lights), static_cast<float>(tex_skysphere->GetMipCount()));
+            m_pcb_pass_cpu.set_f3_value(static_cast<float>(m_count_active_lights), static_cast<float>(tex_skysphere->GetMipCount()), cvar_minotaur_sky_ibl.GetValue());
             cmd_list->PushConstants(m_pcb_pass_cpu);
             
             cmd_list->Dispatch(tex_reflections);

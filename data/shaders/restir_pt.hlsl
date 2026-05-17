@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "restir_reservoir.hlsl"
 //==============================
 
-static const uint  INITIAL_CANDIDATE_SAMPLES   = 16;
+static const uint  INITIAL_CANDIDATE_SAMPLES   = 2;
 static const float MIN_COS_AT_PRIMARY          = 1e-3f;
 static const float RUSSIAN_ROULETTE_PROB       = 0.85f;
 static const uint  RUSSIAN_ROULETTE_START      = 2;

@@ -42,7 +42,7 @@ namespace spartan
         double delta_time_smoothed_ms = 0.0f;
 
         // fps
-        float fps_min            = 30.0f;
+        float fps_min            = 1.0f;
         float fps_max            = 10000.0f;
         float fps_limit          = fps_min;
         float fps_limit_previous = fps_limit;
@@ -87,7 +87,7 @@ namespace spartan
             fps_in = static_cast<float>(Display::GetRefreshRate());
         }
 
-        // clamp to a minimum of 10 FPS to avoid unresponsiveness
+        // clamp to a minimum of 1 FPS so applications can intentionally idle when minimized
         fps_in = clamp(fps_in, fps_min, fps_max);
 
         if (fps_limit == fps_in)

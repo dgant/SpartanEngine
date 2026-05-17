@@ -234,7 +234,8 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
         float sky_mip          = source_roughness * source_roughness * (mip_count - 1.0f);
         float3 ray_dir         = position; // direction stored in position for misses
         float2 sky_uv          = direction_sphere_uv(ray_dir);
-        float3 sky_color       = tex4.SampleLevel(GET_SAMPLER(sampler_trilinear_clamp), sky_uv, sky_mip).rgb;
+        float  sky_ibl         = max(pass_get_f3_value().z, 0.0f);
+        float3 sky_color       = tex4.SampleLevel(GET_SAMPLER(sampler_trilinear_clamp), sky_uv, sky_mip).rgb * sky_ibl;
         tex_uav[thread_id.xy]  = float4(sky_color, 1.0f);
         return;
     }
@@ -350,9 +351,10 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
     // floor that previously made dark areas glow in the reflection
     float  sky_visibility = reflections_trace_sky_visibility(position, normal);
     float  mip_count      = pass_get_f3_value().y;
+    float  sky_ibl        = max(pass_get_f3_value().z, 0.0f);
     float2 sky_uv         = direction_sphere_uv(normal);
     float3 ibl_sample     = tex4.SampleLevel(GET_SAMPLER(sampler_trilinear_clamp), sky_uv, mip_count - 1.0f).rgb;
-    float3 ibl_diffuse    = albedo * ibl_sample * (1.0f - metallic) * sky_visibility * 0.3f;
+    float3 ibl_diffuse    = albedo * ibl_sample * (1.0f - metallic) * sky_visibility * sky_ibl * 0.3f;
     
     // no ibl specular term, the hit point is already a reflection bounce so a second specular
     // bounce off the sky is both expensive and not what drives primary reflection visibility,
