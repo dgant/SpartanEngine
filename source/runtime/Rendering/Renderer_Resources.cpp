@@ -289,6 +289,7 @@ namespace spartan
             {
                 auto rt = static_cast<Renderer_RenderTarget>(static_cast<uint32_t>(Renderer_RenderTarget::restir_reservoir0) + i);
                 retired_restir_targets.push_back(at(render_targets, rt));
+                at(render_targets, rt) = nullptr;
             }
             retired_restir_targets.push_back(at(render_targets, Renderer_RenderTarget::restir_output));
             retired_restir_targets.push_back(at(render_targets, Renderer_RenderTarget::restir_denoised));

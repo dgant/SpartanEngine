@@ -362,11 +362,29 @@ namespace spartan
         if (World::GetLightCount() == 0)
             return;
 
-        // Skip only when ray traced shadows own the shadow term.
-        // ReSTIR/GI is an indirect-lighting contribution; direct lights still sample raster shadow maps.
         bool tlas_available  = RHI_Device::IsSupportedRayTracing() && GetTopLevelAccelerationStructure() != nullptr;
         bool rt_owns_shadows = cvar_ray_traced_shadows.GetValueAs<bool>() && tlas_available;
-        if (rt_owns_shadows)
+        bool volumetric_fog_needs_shadow_maps = cvar_fog.GetValue() > 0.0f && cvar_fog_volumetric_density.GetValue() > 0.0f;
+        if (volumetric_fog_needs_shadow_maps)
+        {
+            bool has_shadowed_volumetric_light = false;
+            for (Entity* entity_light : World::GetEntitiesLights())
+            {
+                Light* light = entity_light->GetComponent<Light>();
+                if (
+                    light &&
+                    light->GetFlag(LightFlags::Shadows) &&
+                    light->IsVolumetricEffective() &&
+                    light->GetIntensityRadiometric() != 0.0f
+                )
+                {
+                    has_shadowed_volumetric_light = true;
+                    break;
+                }
+            }
+            volumetric_fog_needs_shadow_maps = has_shadowed_volumetric_light;
+        }
+        if (rt_owns_shadows && !volumetric_fog_needs_shadow_maps)
             return;
 
         RHI_PipelineState pso;

@@ -69,6 +69,11 @@ namespace spartan
         double target_ms = 1000.0 / fps_limit;
         while (delta_time_ms < target_ms)
         {
+            double remaining_ms = target_ms - delta_time_ms;
+            if (remaining_ms > 2.0)
+            {
+                this_thread::sleep_for(chrono::milliseconds(static_cast<int>(remaining_ms - 1.0)));
+            }
             delta_time_ms = static_cast<double>(chrono::duration<double, milli>(chrono::steady_clock::now() - last_tick_time).count());
         }
 

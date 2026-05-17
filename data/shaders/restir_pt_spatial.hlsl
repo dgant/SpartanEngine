@@ -292,16 +292,5 @@ void main_cs(uint3 dispatch_id : SV_DispatchThreadID)
     if (any(isnan(gi)) || any(isinf(gi)))
         gi = float3(0, 0, 0);
 
-    // primary direct from all analytical lights with ray-traced visibility
-    // light.hlsl skips analytical lights entirely when restir_pt is enabled, so this is the only
-    // path that adds direct contribution from the sun, area, point, and spot lights to the gi buffer
-    // ibl / sky / emissive geometry remain handled by light_image_based.hlsl and indirect bounces
-    uint direct_seed = create_seed_for_pass(pixel, buffer_frame.frame, 6 + spatial_pass_index);
-    float3 geometric_normal = normal_ws;
-    float3 direct = direct_lighting_at_primary_analytical(
-        pos_ws, normal_ws, geometric_normal, view_dir, albedo, roughness, metallic, direct_seed);
-    if (any(isnan(direct)) || any(isinf(direct)))
-        direct = float3(0, 0, 0);
-
-    tex_uav[pixel] = float4(gi + direct, saturate(combined.confidence));
+    tex_uav[pixel] = float4(gi, saturate(combined.confidence));
 }

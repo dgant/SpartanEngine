@@ -385,6 +385,8 @@ namespace spartan
             if (GeometryBuffer::WasRebuilt())
             {
                 DestroyAccelerationStructures();
+                m_pass_state.restir_history_valid         = false;
+                m_pass_state.restir_denoise_history_valid = false;
 
                 // free released blas/tlas gpu memory before rebuilding to avoid a peak
                 RHI_Device::DeletionQueueParse();
