@@ -51,6 +51,8 @@ static const float RESTIR_FIREFLY_LUMA       = 150.0f;
 
 // nee
 static const float MIN_AREA_LIGHT_SOLID_ANGLE = 1e-4f;
+static const float RESTIR_LOCAL_LIGHT_MIN_SOURCE_RADIUS = 0.05f;
+static const float RESTIR_LOCAL_LIGHT_SOURCE_RADIUS_RANGE_FACTOR = 0.04f;
 
 // path flags
 static const uint PATH_FLAG_SKY      = 1 << 0;  // rc is the sky dome, rc_pos stores a unit direction
@@ -373,6 +375,13 @@ float3 soft_saturate_radiance(float3 radiance, float threshold)
         radiance *= scale / lum;
     }
     return radiance;
+}
+
+float compute_restir_local_light_attenuation(float light_dist, float light_range)
+{
+    float range_factor = saturate(1.0f - light_dist / max(light_range, 0.01f));
+    float source_radius = max(RESTIR_LOCAL_LIGHT_MIN_SOURCE_RADIUS, light_range * RESTIR_LOCAL_LIGHT_SOURCE_RADIUS_RANGE_FACTOR);
+    return (range_factor * range_factor) / max((light_dist * light_dist) + (source_radius * source_radius), 0.0001f);
 }
 
 // diffuse-vs-specular selection probability used by the importance-sampled brdf
@@ -859,8 +868,7 @@ float3 direct_lighting_at_primary_analytical(
             light_dir       = to_light / light_dist;
             light_pdf       = 1.0f;
 
-            float range_factor = saturate(1.0f - light_dist / max(light.range, 0.01f));
-            attenuation = range_factor * range_factor / max(light_dist * light_dist, 0.01f);
+            attenuation = compute_restir_local_light_attenuation(light_dist, light.range);
 
             if (is_spot)
             {

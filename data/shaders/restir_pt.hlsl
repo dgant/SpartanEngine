@@ -197,8 +197,7 @@ float3 direct_lighting_at_vertex(
             light_dir       = to_light / light_dist;
             light_pdf       = 1.0f;
 
-            float range_factor = saturate(1.0f - light_dist / max(light.range, 0.01f));
-            attenuation = range_factor * range_factor / max(light_dist * light_dist, 0.01f);
+            attenuation = compute_restir_local_light_attenuation(light_dist, light.range);
 
             if (is_spot)
             {
