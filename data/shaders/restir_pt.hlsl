@@ -288,7 +288,7 @@ float3 direct_lighting_at_vertex(
             probe_ray.TMax      = 10000.0f;
 
             RayQuery<RAY_FLAG_SKIP_CLOSEST_HIT_SHADER> probe_query;
-            probe_query.TraceRayInline(tlas, RAY_FLAG_NONE, 0xFF, probe_ray);
+            probe_query.TraceRayInline(tlas, RAY_FLAG_NONE, 0x01, probe_ray);
             probe_query.Proceed();
 
             if (probe_query.CommittedStatus() == COMMITTED_TRIANGLE_HIT)
@@ -310,7 +310,8 @@ float3 direct_lighting_at_vertex(
             {
                 float2 env_uv       = direction_sphere_uv(env_dir);
                 float3 env_radiance = tex3.SampleLevel(GET_SAMPLER(sampler_trilinear_clamp), env_uv, SKY_MIP_LEVEL).rgb;
-                env_radiance = clamp_sky_radiance(env_radiance);
+                float sky_ibl_intensity = max(pass_get_f3_value().y, 0.0f);
+                env_radiance = clamp_sky_radiance(env_radiance) * sky_ibl_intensity;
 
                 float  brdf_pdf_env;
                 float3 brdf_env = evaluate_brdf(albedo, roughness, metallic, shading_normal, view_dir, env_dir, brdf_pdf_env);
@@ -329,7 +330,8 @@ float3 sample_sky(float3 dir)
 {
     float2 uv = direction_sphere_uv(dir);
     float3 sky = tex3.SampleLevel(GET_SAMPLER(sampler_trilinear_clamp), uv, SKY_MIP_LEVEL).rgb;
-    return clamp_sky_radiance(sky);
+    float sky_ibl_intensity = max(pass_get_f3_value().y, 0.0f);
+    return clamp_sky_radiance(sky) * sky_ibl_intensity;
 }
 
 // traces the sub-path starting from a surface and returns the outgoing radiance toward the
@@ -393,7 +395,7 @@ float3 accumulate_subpath_radiance(
 
         PathPayload next;
         next.hit = false;
-        TraceRay(tlas, RAY_FLAG_NONE, 0xFF, 0, 1, 0, ray, next);
+        TraceRay(tlas, RAY_FLAG_NONE, 0x01, 0, 1, 0, ray, next);
 
         if (!next.hit)
         {
@@ -447,7 +449,7 @@ PathSample trace_path_from_primary(
 
     PathPayload hit;
     hit.hit = false;
-    TraceRay(tlas, RAY_FLAG_NONE, 0xFF, 0, 1, 0, ray, hit);
+    TraceRay(tlas, RAY_FLAG_NONE, 0x01, 0, 1, 0, ray, hit);
 
     if (!hit.hit)
     {

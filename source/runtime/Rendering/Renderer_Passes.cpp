@@ -1163,10 +1163,7 @@ namespace spartan
 
         if (tex_shadows && (tex_shadows->GetWidth() < min_rt_dimension || tex_shadows->GetHeight() < min_rt_dimension))
             return;
-        // restir pt traces its own per-light shadow rays inline in the spatial pass, so this pass would
-        // be redundant work whose output texture nobody reads, skip it and clear to white once
-        bool restir_pt_owns_shadows = cvar_restir_pt.GetValueAs<bool>() && RHI_Device::IsSupportedRayTracing();
-        if (!cvar_ray_traced_shadows.GetValueAs<bool>() || restir_pt_owns_shadows)
+        if (!cvar_ray_traced_shadows.GetValueAs<bool>())
         {
             if (!m_pass_state.cleared_rt_shadows)
             {
@@ -1262,6 +1259,7 @@ namespace spartan
             reservoirs_prev[i] = GetRenderTarget(static_cast<Renderer_RenderTarget>(static_cast<uint32_t>(Renderer_RenderTarget::restir_reservoir_prev0) + i));
         }
         RHI_Texture* tex_skysphere = GetRenderTarget(Renderer_RenderTarget::skysphere);
+        RHI_Texture* tex_ibl       = (cvar_minotaur_hdri_ibl.GetValueAs<bool>() && GetMinotaurHdriTexture()) ? GetMinotaurHdriTexture() : tex_skysphere;
 
         uint32_t width  = tex_gi->GetWidth();
         uint32_t height = tex_gi->GetHeight();
@@ -1299,8 +1297,8 @@ namespace spartan
             SetCommonTextures(cmd_list);
             cmd_list->SetAccelerationStructure(Renderer_BindingsSrv::tlas, tlas);
             
-            tex_skysphere->SetLayout(RHI_Image_Layout::Shader_Read, cmd_list);
-            cmd_list->SetTexture(Renderer_BindingsSrv::tex3, tex_skysphere);
+            tex_ibl->SetLayout(RHI_Image_Layout::Shader_Read, cmd_list);
+            cmd_list->SetTexture(Renderer_BindingsSrv::tex3, tex_ibl);
             
             GetBuffer(Renderer_Buffer::GeometryInfo)->ResetOffset();
             cmd_list->SetBuffer(Renderer_BindingsUav::geometry_info, GetBuffer(Renderer_Buffer::GeometryInfo));
@@ -1312,6 +1310,7 @@ namespace spartan
 
             // raygen shader's pipeline layout has a push constant range via common_resources.hlsl,
             // amd drivers tdr when tracerays dispatches with uninitialized push constant scalar registers
+            m_pcb_pass_cpu.set_f3_value(0.0f, cvar_minotaur_sky_ibl.GetValue(), static_cast<float>(tex_ibl->GetMipCount()));
             cmd_list->PushConstants(m_pcb_pass_cpu);
 
             cmd_list->TraceRays(width, height);
@@ -1620,10 +1619,10 @@ namespace spartan
     {
         RHI_Texture* tex_sss = GetRenderTarget(Renderer_RenderTarget::sss);
 
-        // skip when ray traced shadows or restir pt own the directional shadow term
+        // skip when ray traced shadows own the directional shadow term
         // light.hlsl does not sample tex_uav_sss in those branches so this pass is pure waste
         bool tlas_available  = RHI_Device::IsSupportedRayTracing() && GetTopLevelAccelerationStructure() != nullptr;
-        bool rt_owns_shadows = (cvar_ray_traced_shadows.GetValueAs<bool>() && tlas_available) || cvar_restir_pt.GetValueAs<bool>();
+        bool rt_owns_shadows = cvar_ray_traced_shadows.GetValueAs<bool>() && tlas_available;
         if (rt_owns_shadows)
             return;
 

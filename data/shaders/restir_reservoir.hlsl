@@ -638,7 +638,7 @@ bool trace_shift_visibility(PathSample src, float3 dst_pos, float3 dst_normal)
     ray.TMax      = t_max;
 
     RayQuery<RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER> query;
-    query.TraceRayInline(tlas, RAY_FLAG_NONE, 0xFF, ray);
+    query.TraceRayInline(tlas, RAY_FLAG_NONE, 0x01, ray);
     query.Proceed();
 
     return query.CommittedStatus() == COMMITTED_NOTHING;
@@ -738,7 +738,7 @@ bool trace_shadow_ray(float3 origin, float3 direction, float max_dist)
     ray.TMax      = max(max_dist - epsilon, epsilon);
 
     RayQuery<RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER> query;
-    query.TraceRayInline(tlas, RAY_FLAG_NONE, 0xFF, ray);
+    query.TraceRayInline(tlas, RAY_FLAG_NONE, 0x01, ray);
     query.Proceed();
 
     return query.CommittedStatus() == COMMITTED_NOTHING;
