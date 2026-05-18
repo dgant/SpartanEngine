@@ -377,6 +377,12 @@ float3 soft_saturate_radiance(float3 radiance, float threshold)
     return radiance;
 }
 
+float3 restir_srgb_to_linear_reflectance(float3 color)
+{
+    color = saturate(color);
+    return pow(color, float3(2.2f, 2.2f, 2.2f));
+}
+
 float compute_restir_local_light_attenuation(float light_dist, float light_range)
 {
     float range_factor = saturate(1.0f - light_dist / max(light_range, 0.01f));

@@ -516,7 +516,7 @@ void ray_gen()
     float3 pos_ws    = get_position(uv);
     float3 normal_ws = get_normal(uv);
     float4 material  = tex_material.SampleLevel(GET_SAMPLER(sampler_point_clamp), uv, 0);
-    float3 albedo    = saturate(tex_albedo.SampleLevel(GET_SAMPLER(sampler_point_clamp), uv, 0).rgb);
+    float3 albedo    = restir_srgb_to_linear_reflectance(tex_albedo.SampleLevel(GET_SAMPLER(sampler_point_clamp), uv, 0).rgb);
     float  roughness = max(material.r, 0.04f);
     float  metallic  = material.g;
     float3 view_dir  = normalize(get_camera_position() - pos_ws);
@@ -639,13 +639,13 @@ void closest_hit(inout PathPayload payload : SV_RayPayload, in BuiltInTriangleIn
     float dist      = RayTCurrent();
     float mip_level = clamp(log2(max(dist * 0.5f, 1.0f)), 0.0f, 4.0f);
 
-    float3 albedo = mat.color.rgb;
+    float3 albedo = restir_srgb_to_linear_reflectance(mat.color.rgb);
     if (mat.has_texture_albedo())
     {
         uint albedo_texture_index = material_index + material_texture_index_albedo;
         float4 sampled = material_textures[albedo_texture_index].SampleLevel(
             GET_SAMPLER(sampler_bilinear_wrap), texcoord, mip_level);
-        albedo = sampled.rgb * mat.color.rgb;
+        albedo = restir_srgb_to_linear_reflectance(sampled.rgb) * restir_srgb_to_linear_reflectance(mat.color.rgb);
     }
     albedo = saturate(albedo);
 
