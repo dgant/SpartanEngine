@@ -77,6 +77,24 @@ namespace spartan
             *ConsoleRegistry::Get().Find("r.restir_pt_intensity")->m_value_ptr = v;
         }
 
+        void on_restir_pt_initial_candidate_samples_change(const CVarVariant& value)
+        {
+            float v = clamp(round(get<float>(value)), 1.0f, 64.0f);
+            *ConsoleRegistry::Get().Find("r.restir_pt_initial_candidate_samples")->m_value_ptr = v;
+        }
+
+        void on_restir_pt_spatial_samples_change(const CVarVariant& value)
+        {
+            float v = clamp(round(get<float>(value)), 1.0f, 32.0f);
+            *ConsoleRegistry::Get().Find("r.restir_pt_spatial_samples")->m_value_ptr = v;
+        }
+
+        void on_restir_pt_max_path_length_change(const CVarVariant& value)
+        {
+            float v = clamp(round(get<float>(value)), 1.0f, 8.0f);
+            *ConsoleRegistry::Get().Find("r.restir_pt_max_path_length")->m_value_ptr = v;
+        }
+
         void on_hdr_change(const CVarVariant& value)
         {
             if (get<float>(value) == 1.0f && !Display::GetHdr())
@@ -185,11 +203,11 @@ namespace spartan
     TConsoleVar<float> cvar_fog_volumetric_horizon         ("r.fog_volumetric_horizon",         60.0f,                                                   "volumetric fog punctual-light horizon distance");
     TConsoleVar<float> cvar_fog_phase                      ("r.fog_phase",                      0.6f,                                                    "volumetric fog phase anisotropy");
     TConsoleVar<float> cvar_fog_min_transmittance          ("r.fog_min_transmittance",          0.005f,                                                  "volumetric fog minimum transmittance");
-    TConsoleVar<float> cvar_minotaur_sky_ibl               ("r.minotaur_sky_ibl",               1.0f,                                                    "minotaur sky image-based lighting intensity");
-    TConsoleVar<float> cvar_minotaur_moon_bounce           ("r.minotaur_moon_bounce",           1.0f,                                                    "minotaur moonlight indirect interior bounce");
-    TConsoleVar<float> cvar_minotaur_skybox_brightness     ("r.minotaur_skybox_brightness",     1.0f,                                                    "minotaur visible skybox brightness");
-    TConsoleVar<float> cvar_minotaur_hdri_skybox           ("r.minotaur_hdri_skybox",           0.0f,                                                    "use Minotaur HDRI texture for visible sky");
-    TConsoleVar<float> cvar_minotaur_hdri_ibl              ("r.minotaur_hdri_ibl",              0.0f,                                                    "use Minotaur HDRI texture for sky image-based lighting");
+    TConsoleVar<float> cvar_sky_ibl_intensity               ("r.sky_ibl_intensity",               1.0f,                                                    "sky image-based lighting intensity");
+    TConsoleVar<float> cvar_ibl_diffuse_fill_intensity      ("r.ibl_diffuse_fill_intensity",      1.0f,                                                    "diffuse ambient fill added to image-based lighting");
+    TConsoleVar<float> cvar_skybox_brightness               ("r.skybox_brightness",               1.0f,                                                    "visible skybox brightness");
+    TConsoleVar<float> cvar_external_skybox                 ("r.external_skybox",                 0.0f,                                                    "use the external environment texture for visible sky");
+    TConsoleVar<float> cvar_external_ibl                    ("r.external_ibl",                    0.0f,                                                    "use the external environment texture for image-based lighting");
     TConsoleVar<float> cvar_ssao                           ("r.ssao",                           1.0f,                                                    "screen space ambient occlusion");
     TConsoleVar<float> cvar_ssao_radius                    ("r.ssao_radius",                    1.5f,                                                    "screen space ambient occlusion radius");
     TConsoleVar<float> cvar_ssao_intensity                 ("r.ssao_intensity",                 1.0f,                                                    "screen space ambient occlusion power");
@@ -205,6 +223,9 @@ namespace spartan
     TConsoleVar<float> cvar_restir_pt_debug_mode           ("r.restir_pt_debug_mode",           0.0f,                                                    "restir debug mode",                    on_restir_pt_debug_mode_change);
     TConsoleVar<float> cvar_restir_pt_stage                ("r.restir_pt_stage",                4.0f,                                                    "restir execution stage (0-4)",         on_restir_pt_stage_change);
     TConsoleVar<float> cvar_restir_pt_intensity            ("r.restir_pt_intensity",            1.0f,                                                    "restir contribution intensity",        on_restir_pt_intensity_change);
+    TConsoleVar<float> cvar_restir_pt_initial_candidate_samples("r.restir_pt_initial_candidate_samples", 16.0f, "restir initial candidate samples per pixel", on_restir_pt_initial_candidate_samples_change);
+    TConsoleVar<float> cvar_restir_pt_spatial_samples      ("r.restir_pt_spatial_samples",      8.0f,                                                    "restir spatial samples per pass",      on_restir_pt_spatial_samples_change);
+    TConsoleVar<float> cvar_restir_pt_max_path_length      ("r.restir_pt_max_path_length",      5.0f,                                                    "restir maximum path length",           on_restir_pt_max_path_length_change);
     TConsoleVar<float> cvar_motion_blur                    ("r.motion_blur",                    1.0f,                                                    "motion blur");
     TConsoleVar<float> cvar_depth_of_field                 ("r.depth_of_field",                 1.0f,                                                    "depth of field");
     TConsoleVar<float> cvar_depth_of_field_strength        ("r.depth_of_field_strength",        1.0f,                                                    "depth of field blur strength");

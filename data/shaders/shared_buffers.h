@@ -104,7 +104,11 @@ struct FrameBufferData
     SHARED_FLOAT cloud_coverage;
     SHARED_FLOAT cloud_shadows;
     SHARED_FLOAT restir_pt_light_count;
+    SHARED_FLOAT restir_pt_initial_candidate_samples;
+    SHARED_FLOAT restir_pt_spatial_samples;
+    SHARED_FLOAT restir_pt_max_path_length;
     SHARED_FLOAT padding4;
+    SHARED_FLOAT padding5;
 
     // vr stereo - right eye matrices (left eye uses the primary matrices above)
     SHARED_MATRIX view_right;

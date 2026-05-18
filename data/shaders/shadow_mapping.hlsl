@@ -188,7 +188,7 @@ float3 compute_normal_offset(Surface surface, Light light, uint cascade_index)
 {
     // Perspective point-light shadow maps need a small world-space bias. The
     // orthographic texel-size estimate below is for directional cascades and
-    // can over-bias small nearby occluders such as Minotaur torch sconces.
+    // can over-bias small nearby occluders such as wall-mounted light fixtures.
     if (light.is_point())
     {
         return surface.normal * 0.003f;

@@ -23,9 +23,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define SPARTAN_RESTIR_RESERVOIR
 
 // core parameters
-static const uint  RESTIR_MAX_PATH_LENGTH    = 3;
 static const uint  RESTIR_M_CAP              = 256;
-static const uint  RESTIR_SPATIAL_SAMPLES    = 2;
 static const float RESTIR_DEPTH_THRESHOLD    = 0.05f;
 static const float RESTIR_NORMAL_THRESHOLD   = 0.75f;
 static const float RESTIR_TEMPORAL_DECAY     = 0.97f;
@@ -90,6 +88,27 @@ struct Reservoir
     float      age;
     float      confidence;
 };
+
+uint restir_clamped_uint(float value, uint min_value, uint max_value)
+{
+    uint rounded = (uint)round(value);
+    return min(max(rounded, min_value), max_value);
+}
+
+uint restir_max_path_length()
+{
+    return restir_clamped_uint(buffer_frame.restir_pt_max_path_length, 1u, 8u);
+}
+
+uint restir_spatial_samples()
+{
+    return restir_clamped_uint(buffer_frame.restir_pt_spatial_samples, 1u, 32u);
+}
+
+uint restir_initial_candidate_samples()
+{
+    return restir_clamped_uint(buffer_frame.restir_pt_initial_candidate_samples, 1u, 64u);
+}
 
 float2 octahedral_encode(float3 n)
 {
@@ -192,7 +211,7 @@ bool is_reservoir_valid(Reservoir r)
     if (any(isnan(r.sample.rc_normal))   || any(isinf(r.sample.rc_normal)))   return false;
     if (isnan(r.W) || isinf(r.W) || r.W < 0)                                  return false;
     if (isnan(r.M) || r.M < 0)                                                return false;
-    if (r.sample.rc_length > RESTIR_MAX_PATH_LENGTH)                          return false;
+    if (r.sample.rc_length > restir_max_path_length())                        return false;
     return true;
 }
 

@@ -159,11 +159,11 @@ void main_cs(uint3 dispatch_id : SV_DispatchThreadID)
     float adaptive_radius = compute_adaptive_radius(linear_depth, roughness, edge_factor, normal_ws, view_dir);
     adaptive_radius      *= lerp(0.35f, 1.0f, center_confidence);
 
-    uint spatial_sample_count = RESTIR_SPATIAL_SAMPLES;
+    uint spatial_sample_count = restir_spatial_samples();
     if (spatial_pass_index > 0)
     {
         adaptive_radius     *= lerp(0.4f, 0.65f, center_confidence);
-        spatial_sample_count = max(RESTIR_SPATIAL_SAMPLES - 2u, 4u);
+        spatial_sample_count = max(spatial_sample_count > 2u ? spatial_sample_count - 2u : 1u, 4u);
     }
 
     float target_cur = target_pdf_self(center.sample, pos_ws, normal_ws, view_dir, albedo, roughness, metallic);

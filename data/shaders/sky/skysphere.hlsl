@@ -1205,7 +1205,7 @@ void main_cs(uint3 tid : SV_DispatchThreadID)
     float3 luminance = compute_sky_luminance(cam_pos, view_dir, sun_dir, tex, tex2,
                                               GET_SAMPLER(sampler_bilinear_clamp), 0.5);
     
-    // sun disc intentionally disabled for Minotaur; all night celestials are gathered below
+    // sun disc intentionally disabled for applications that provide their own night sky texture
     float3 sun_col = float3(0, 0, 0);
     
     // ground fade for the bottom hemisphere, fully gone within ~7 degrees below the horizon

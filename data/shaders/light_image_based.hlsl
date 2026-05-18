@@ -79,7 +79,7 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
     float3 dominant_specular_direction = get_dominant_specular_direction(surface.normal, view_dir, surface.roughness);
     float mip_count_environment        = pass_get_f3_value().x;
     float sky_ibl_intensity            = pass_get_f3_value().y * 4.0f;
-    float moon_bounce_intensity         = pass_get_f3_value().z;
+    float diffuse_fill_intensity       = pass_get_f3_value().z;
     float mip_level                    = surface.roughness * surface.roughness * (mip_count_environment - 1.0f);
     
     // specular occlusion - lagarde & de rousiers 2014 physically-based approximation
@@ -100,7 +100,7 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
     float3 diffuse_occlusion = gtao_multi_bounce(surface.occlusion, surface.albedo.rgb);
     float3 diffuse_ibl       = diffuse_skysphere * diffuse_occlusion * diffuse_energy * surface.albedo.rgb;
     float3 specular_ibl      = specular_skysphere * specular_energy * specular_occlusion;
-    float3 minotaur_bounce   = surface.albedo.rgb * diffuse_energy * diffuse_occlusion * moon_bounce_intensity * 0.02f;
+    float3 diffuse_fill      = surface.albedo.rgb * diffuse_energy * diffuse_occlusion * diffuse_fill_intensity * 0.02f;
 
     // when ray traced reflections are enabled, they handle specular
     if (is_ray_traced_reflections_enabled())
@@ -109,7 +109,7 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
     }
 
     // transparents take full ibl, fresnel inside the split sum already governs the reflection split
-    float3 ibl  = diffuse_ibl + specular_ibl + minotaur_bounce;
+    float3 ibl  = diffuse_ibl + specular_ibl + diffuse_fill;
     ibl        *= sky_ibl_intensity;
     ibl        *= surface.is_transparent() ? 1.0f : surface.alpha;
 

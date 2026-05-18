@@ -73,11 +73,11 @@ namespace spartan
     extern TConsoleVar<float> cvar_fog_volumetric_horizon;
     extern TConsoleVar<float> cvar_fog_phase;
     extern TConsoleVar<float> cvar_fog_min_transmittance;
-    extern TConsoleVar<float> cvar_minotaur_sky_ibl;
-    extern TConsoleVar<float> cvar_minotaur_moon_bounce;
-    extern TConsoleVar<float> cvar_minotaur_skybox_brightness;
-    extern TConsoleVar<float> cvar_minotaur_hdri_skybox;
-    extern TConsoleVar<float> cvar_minotaur_hdri_ibl;
+    extern TConsoleVar<float> cvar_sky_ibl_intensity;
+    extern TConsoleVar<float> cvar_ibl_diffuse_fill_intensity;
+    extern TConsoleVar<float> cvar_skybox_brightness;
+    extern TConsoleVar<float> cvar_external_skybox;
+    extern TConsoleVar<float> cvar_external_ibl;
     extern TConsoleVar<float> cvar_ssao;
     extern TConsoleVar<float> cvar_ssao_radius;
     extern TConsoleVar<float> cvar_ssao_intensity;
@@ -93,6 +93,9 @@ namespace spartan
     extern TConsoleVar<float> cvar_restir_pt_debug_mode;
     extern TConsoleVar<float> cvar_restir_pt_stage;
     extern TConsoleVar<float> cvar_restir_pt_intensity;
+    extern TConsoleVar<float> cvar_restir_pt_initial_candidate_samples;
+    extern TConsoleVar<float> cvar_restir_pt_spatial_samples;
+    extern TConsoleVar<float> cvar_restir_pt_max_path_length;
     extern TConsoleVar<float> cvar_motion_blur;
     extern TConsoleVar<float> cvar_depth_of_field;
     extern TConsoleVar<float> cvar_depth_of_field_strength;
@@ -216,8 +219,8 @@ namespace spartan
         static RHI_DepthStencilState* GetDepthStencilState(const Renderer_DepthStencilState type);
         static RHI_BlendState* GetBlendState(const Renderer_BlendState type);
         static RHI_Texture* GetRenderTarget(const Renderer_RenderTarget type);
-        static RHI_Texture* GetMinotaurHdriTexture();
-        static void SetMinotaurHdriTexture(const std::shared_ptr<RHI_Texture>& texture);
+        static RHI_Texture* GetExternalEnvironmentTexture();
+        static void SetExternalEnvironmentTexture(const std::shared_ptr<RHI_Texture>& texture);
         static RHI_Shader* GetShader(const Renderer_Shader type);
         static RHI_Buffer* GetBuffer(const Renderer_Buffer type);
         static RHI_Texture* GetStandardTexture(const Renderer_StandardTexture type);
@@ -393,7 +396,7 @@ namespace spartan
         static math::Matrix m_view_projection_previous_right;
         static math::Matrix m_view_projection_previous_unjittered_left;
         static std::shared_ptr<RHI_Buffer> m_lines_vertex_buffer;
-        static std::shared_ptr<RHI_Texture> m_minotaur_hdri_texture;
+        static std::shared_ptr<RHI_Texture> m_external_environment_texture;
         static std::vector<RHI_Vertex_PosCol> m_lines_vertices;
         static std::vector<PersistentLine> m_persistent_lines;
         static std::vector<std::tuple<RHI_Texture*, math::Vector3>> m_icons;

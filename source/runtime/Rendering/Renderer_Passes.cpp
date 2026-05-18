@@ -1106,7 +1106,7 @@ namespace spartan
         RHI_Texture* tex_reflections_normal   = GetRenderTarget(Renderer_RenderTarget::gbuffer_reflections_normal);
         RHI_Texture* tex_reflections_albedo   = GetRenderTarget(Renderer_RenderTarget::gbuffer_reflections_albedo);
         RHI_Texture* tex_skysphere            = GetRenderTarget(Renderer_RenderTarget::skysphere);
-        RHI_Texture* tex_ibl                  = (cvar_minotaur_hdri_ibl.GetValueAs<bool>() && GetMinotaurHdriTexture()) ? GetMinotaurHdriTexture() : tex_skysphere;
+        RHI_Texture* tex_ibl                  = (cvar_external_ibl.GetValueAs<bool>() && GetExternalEnvironmentTexture()) ? GetExternalEnvironmentTexture() : tex_skysphere;
         
         if (!tex_reflections_position)
             return;
@@ -1144,7 +1144,7 @@ namespace spartan
                 }
             }
             
-            m_pcb_pass_cpu.set_f3_value(static_cast<float>(m_count_active_lights), static_cast<float>(tex_ibl->GetMipCount()), cvar_minotaur_sky_ibl.GetValue());
+            m_pcb_pass_cpu.set_f3_value(static_cast<float>(m_count_active_lights), static_cast<float>(tex_ibl->GetMipCount()), cvar_sky_ibl_intensity.GetValue());
             cmd_list->PushConstants(m_pcb_pass_cpu);
             
             cmd_list->Dispatch(tex_reflections);
@@ -1259,7 +1259,7 @@ namespace spartan
             reservoirs_prev[i] = GetRenderTarget(static_cast<Renderer_RenderTarget>(static_cast<uint32_t>(Renderer_RenderTarget::restir_reservoir_prev0) + i));
         }
         RHI_Texture* tex_skysphere = GetRenderTarget(Renderer_RenderTarget::skysphere);
-        RHI_Texture* tex_ibl       = (cvar_minotaur_hdri_ibl.GetValueAs<bool>() && GetMinotaurHdriTexture()) ? GetMinotaurHdriTexture() : tex_skysphere;
+        RHI_Texture* tex_ibl       = (cvar_external_ibl.GetValueAs<bool>() && GetExternalEnvironmentTexture()) ? GetExternalEnvironmentTexture() : tex_skysphere;
 
         uint32_t width  = tex_gi->GetWidth();
         uint32_t height = tex_gi->GetHeight();
@@ -1310,7 +1310,7 @@ namespace spartan
 
             // raygen shader's pipeline layout has a push constant range via common_resources.hlsl,
             // amd drivers tdr when tracerays dispatches with uninitialized push constant scalar registers
-            m_pcb_pass_cpu.set_f3_value(0.0f, cvar_minotaur_sky_ibl.GetValue(), static_cast<float>(tex_ibl->GetMipCount()));
+            m_pcb_pass_cpu.set_f3_value(0.0f, cvar_sky_ibl_intensity.GetValue(), static_cast<float>(tex_ibl->GetMipCount()));
             cmd_list->PushConstants(m_pcb_pass_cpu);
 
             cmd_list->TraceRays(width, height);
@@ -1816,7 +1816,7 @@ namespace spartan
         RHI_Shader* shader_c              = GetShader(Renderer_Shader::light_composition_c);
         RHI_Texture* tex_out              = GetRenderTarget(Renderer_RenderTarget::frame_render);
         RHI_Texture* tex_skysphere        = GetRenderTarget(Renderer_RenderTarget::skysphere);
-        RHI_Texture* tex_skybox           = (cvar_minotaur_hdri_skybox.GetValueAs<bool>() && GetMinotaurHdriTexture()) ? GetMinotaurHdriTexture() : tex_skysphere;
+        RHI_Texture* tex_skybox           = (cvar_external_skybox.GetValueAs<bool>() && GetExternalEnvironmentTexture()) ? GetExternalEnvironmentTexture() : tex_skysphere;
         RHI_Texture* tex_light_diffuse    = GetRenderTarget(Renderer_RenderTarget::light_diffuse);
         RHI_Texture* tex_light_specular   = GetRenderTarget(Renderer_RenderTarget::light_specular);
         RHI_Texture* tex_light_volumetric = GetRenderTarget(Renderer_RenderTarget::light_volumetric);
@@ -1833,9 +1833,9 @@ namespace spartan
             cmd_list->SetPipelineState(pso);
 
             m_pcb_pass_cpu.is_transparent = is_transparent_pass ? 1 : 0;
-            m_pcb_pass_cpu.set_f3_value(cvar_minotaur_sky_ibl.GetValue(), cvar_fog.GetValue(), cvar_fog_height_scale.GetValue());
+            m_pcb_pass_cpu.set_f3_value(cvar_sky_ibl_intensity.GetValue(), cvar_fog.GetValue(), cvar_fog_height_scale.GetValue());
             m_pcb_pass_cpu.set_f3_value2(cvar_fog_falloff_power.GetValue(), cvar_fog_volumetric_density.GetValue(), cvar_fog_volumetric_horizon.GetValue());
-            m_pcb_pass_cpu.set_f4_value(cvar_fog_phase.GetValue(), cvar_fog_min_transmittance.GetValue(), cvar_restir_pt_intensity.GetValue(), cvar_minotaur_skybox_brightness.GetValue());
+            m_pcb_pass_cpu.set_f4_value(cvar_fog_phase.GetValue(), cvar_fog_min_transmittance.GetValue(), cvar_restir_pt_intensity.GetValue(), cvar_skybox_brightness.GetValue());
             cmd_list->PushConstants(m_pcb_pass_cpu);
 
             SetCommonTextures(cmd_list, eye_layer);
@@ -1867,11 +1867,11 @@ namespace spartan
             cmd_list->SetTexture(Renderer_BindingsUav::tex,     tex_out);
             cmd_list->SetTexture(Renderer_BindingsUav::tex_sss, GetRenderTarget(Renderer_RenderTarget::sss));
             cmd_list->SetTexture(Renderer_BindingsSrv::tex2,    GetRenderTarget(Renderer_RenderTarget::lut_brdf_specular));
-            RHI_Texture* tex_ibl = (cvar_minotaur_hdri_ibl.GetValueAs<bool>() && GetMinotaurHdriTexture()) ? GetMinotaurHdriTexture() : GetRenderTarget(Renderer_RenderTarget::skysphere);
+            RHI_Texture* tex_ibl = (cvar_external_ibl.GetValueAs<bool>() && GetExternalEnvironmentTexture()) ? GetExternalEnvironmentTexture() : GetRenderTarget(Renderer_RenderTarget::skysphere);
             tex_ibl->SetLayout(RHI_Image_Layout::Shader_Read, cmd_list);
             cmd_list->SetTexture(Renderer_BindingsSrv::tex3,    tex_ibl);
 
-            m_pcb_pass_cpu.set_f3_value(static_cast<float>(tex_ibl->GetMipCount()), cvar_minotaur_sky_ibl.GetValue(), cvar_minotaur_moon_bounce.GetValue());
+            m_pcb_pass_cpu.set_f3_value(static_cast<float>(tex_ibl->GetMipCount()), cvar_sky_ibl_intensity.GetValue(), cvar_ibl_diffuse_fill_intensity.GetValue());
             cmd_list->PushConstants(m_pcb_pass_cpu);
             cmd_list->Dispatch(tex_out, Renderer::GetResolutionScale());
         }

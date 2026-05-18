@@ -100,7 +100,7 @@ namespace spartan
     array<Sb_Aabb, rhi_max_array_size> Renderer::m_bindless_aabbs;
     unique_ptr<RHI_AccelerationStructure> m_tlas;
     uint32_t Renderer::m_count_active_lights = 0;
-    shared_ptr<RHI_Texture> Renderer::m_minotaur_hdri_texture;
+    shared_ptr<RHI_Texture> Renderer::m_external_environment_texture;
 
     namespace
     {
@@ -853,6 +853,9 @@ namespace spartan
         m_cb_frame_cpu.cloud_coverage = cvar_cloud_coverage.GetValue();
         m_cb_frame_cpu.cloud_shadows  = cvar_cloud_shadows.GetValue();
         m_cb_frame_cpu.restir_pt_light_count = static_cast<float>(m_count_active_lights);
+        m_cb_frame_cpu.restir_pt_initial_candidate_samples = cvar_restir_pt_initial_candidate_samples.GetValue();
+        m_cb_frame_cpu.restir_pt_spatial_samples           = cvar_restir_pt_spatial_samples.GetValue();
+        m_cb_frame_cpu.restir_pt_max_path_length           = cvar_restir_pt_max_path_length.GetValue();
         m_cb_frame_cpu.wind           = World::GetWind();
         // feature bits (must match common_resources.hlsl)
         // ray traced shadows require a valid tlas so the shader's inline ray query has something to trace against

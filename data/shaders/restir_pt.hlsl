@@ -24,7 +24,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "restir_reservoir.hlsl"
 //==============================
 
-static const uint  INITIAL_CANDIDATE_SAMPLES   = 2;
 static const float MIN_COS_AT_PRIMARY          = 1e-3f;
 static const float RUSSIAN_ROULETTE_PROB       = 0.85f;
 static const uint  RUSSIAN_ROULETTE_START      = 2;
@@ -465,7 +464,7 @@ PathSample trace_path_from_primary(
     s.rc_normal   = hit.geometric_normal;
     s.rc_length   = 2;
 
-    float3 suffix = accumulate_subpath_radiance(hit, -dir, RESTIR_MAX_PATH_LENGTH - 1, seed);
+    float3 suffix = accumulate_subpath_radiance(hit, -dir, restir_max_path_length() - 1, seed);
     s.rc_radiance = soft_saturate_radiance(suffix, RESTIR_FIREFLY_LUMA);
     s.path_length = 2;
 
@@ -526,7 +525,8 @@ void ray_gen()
     // ris streaming over N brdf-sampled candidate paths
     // source pdf matches the primary brdf lobe (diffuse+ggx) so specular hits don't explode
     // every iteration calls update_reservoir so M counts every trial (paper-form unbiased ris)
-    for (uint i = 0; i < INITIAL_CANDIDATE_SAMPLES; i++)
+    uint initial_candidate_samples = restir_initial_candidate_samples();
+    for (uint i = 0; i < initial_candidate_samples; i++)
     {
         float2 xi = random_float2(seed);
         float  source_pdf;
@@ -562,7 +562,7 @@ void ray_gen()
     float w_clamp = get_w_clamp_for_sample(reservoir.sample);
     reservoir.W = min(reservoir.W, w_clamp);
 
-    float sample_count_quality = saturate(reservoir.M / float(INITIAL_CANDIDATE_SAMPLES));
+    float sample_count_quality = saturate(reservoir.M / float(initial_candidate_samples));
     reservoir.confidence       = (final_target > 0.0f) ? sample_count_quality : 0.0f;
     reservoir.age              = 0.0f;
 

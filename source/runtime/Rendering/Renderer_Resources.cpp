@@ -844,14 +844,14 @@ namespace spartan
         return render_targets[static_cast<uint8_t>(type)].get();
     }
 
-    RHI_Texture* Renderer::GetMinotaurHdriTexture()
+    RHI_Texture* Renderer::GetExternalEnvironmentTexture()
     {
-        return m_minotaur_hdri_texture.get();
+        return m_external_environment_texture.get();
     }
 
-    void Renderer::SetMinotaurHdriTexture(const shared_ptr<RHI_Texture>& texture)
+    void Renderer::SetExternalEnvironmentTexture(const shared_ptr<RHI_Texture>& texture)
     {
-        m_minotaur_hdri_texture = texture;
+        m_external_environment_texture = texture;
     }
 
     RHI_Shader* Renderer::GetShader(const Renderer_Shader type)
