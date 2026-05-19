@@ -216,7 +216,7 @@ namespace spartan
     TConsoleVar<float> cvar_ssao_thickness                 ("r.ssao_thickness",                 1.0f,                                                    "screen space ambient occlusion thickness");
     TConsoleVar<float> cvar_ssao_falloff                   ("r.ssao_falloff",                   0.6f,                                                    "screen space ambient occlusion falloff fraction");
     TConsoleVar<float> cvar_ray_traced_reflections         ("r.ray_traced_reflections",         static_cast<float>(RHI_Device::IsSupportedRayTracing()), "ray traced reflections",                  on_ray_traced_reflections_change);
-    TConsoleVar<float> cvar_ray_traced_shadows             ("r.ray_traced_shadows",             static_cast<float>(RHI_Device::IsSupportedRayTracing()), "ray traced shadows for all lights",       on_ray_traced_shadows_change);
+    TConsoleVar<float> cvar_ray_traced_shadows             ("r.ray_traced_shadows",             static_cast<float>(RHI_Device::IsSupportedRayTracing()), "ray traced directional shadows",           on_ray_traced_shadows_change);
     TConsoleVar<float> cvar_restir_pt                      ("r.restir_pt",                      0.0f,                                                    "restir path tracing global illumination");
     TConsoleVar<float> cvar_restir_pt_preallocate          ("r.restir_pt_preallocate",          0.0f,                                                    "preallocate restir resources");
     TConsoleVar<float> cvar_restir_pt_scale                ("r.restir_pt_scale",                0.5f,                                                    "restir resolution scale (0.1-1.0)",       on_restir_pt_scale_change);

@@ -344,22 +344,14 @@ void main_cs(uint3 thread_id : SV_DispatchThreadID)
         {
             // compute shadow term
             // ray traced shadows are mutually exclusive with rasterized/screen-space shadows
-            bool can_use_rt_shadows = light.has_shadows() && is_ray_traced_shadows_enabled();
+            bool can_use_rt_shadows = light.has_shadows() && is_ray_traced_shadows_enabled() && light.is_directional();
 
-            if (can_use_rt_shadows && light.is_directional())
+            if (can_use_rt_shadows)
             {
                 // dedicated screen space pass produces high quality multi sample sun shadows
                 L_shadow        = sample_ray_traced_shadow(surface.uv);
                 light.radiance *= L_shadow;
             }
-        #ifdef RAY_TRACING_ENABLED
-            else if (can_use_rt_shadows)
-            {
-                // inline ray traced shadow for point spot and area lights, 1 spp jittered for taa
-                L_shadow        = trace_inline_shadow_ray(light, surface, float2(thread_id.xy));
-                light.radiance *= L_shadow;
-            }
-        #endif
             else if (light.has_shadows())
             {
                 // rasterized shadow mapping fallback
